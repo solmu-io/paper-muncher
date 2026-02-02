@@ -144,6 +144,17 @@ export Async::Task<> runAsync(
                     {.showBackgroundGraphics = true}
                 );
             });
+            // window->print(settings) | forEach([&](Print::Page& page) {
+            //     pageCount++;
+            //     logInfo("Printing page {}", pageCount);
+            //     if (pageCount > 500) {
+            //         panic("Too many pages - possible infinite pagination loop");
+            //     }
+            //     page.print(
+            //         *printer,
+            //         {.showBackgroundGraphics = true}
+            //     );
+            // });
         } else {
             auto media = options.prepareMedia();
             window->changeMedia(media);

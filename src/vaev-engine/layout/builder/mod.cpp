@@ -323,9 +323,15 @@ static void _buildText(BuilderContext bc, Str text, Rc<Style::SpecifiedValues> p
 }
 
 static void _buildImage(BuilderContext bc, Gc::Ref<Dom::Element> el) {
+    logInfo("_buildImage called for element");
+    if (not el->imageContent) {
+        logWarn("IMG element has NO imageContent!");
+        return;
+    }
+    logInfo("IMG element HAS imageContent, setting bc.content()");
     bc.content() = el->imageContent.unwrap();
+    logInfo("bc.content() set successfully");
 }
-
 static void _buildInputProse(BuilderContext bc, Gc::Ref<Dom::Element> el) {
     auto font = el->specifiedValues()->fontFace;
     Resolver resolver{
@@ -400,6 +406,8 @@ SVGRoot _buildSVG(Gc::Ref<Dom::Element> el) {
 }
 
 static void _buildVoidElement(BuilderContext bc, Gc::Ref<Dom::Element> el) {
+    logInfo("_buildVoidElement called for: {}", el->qualifiedName);
+    
     if (el->qualifiedName == Html::INPUT_TAG) {
         // FIXME: Only support appearance: none for now
         // https://www.w3.org/TR/css-ui-4/#valdef-appearance-none
@@ -408,8 +416,7 @@ static void _buildVoidElement(BuilderContext bc, Gc::Ref<Dom::Element> el) {
         if (type == "hidden") {
             // Don't generate a box
         } else if (type == "radio" or type == "checkbox") {
-            // NOTE: The UA may however give them a different look and feel as long as it remains possible to operate the widget.
-            // https://www.w3.org/TR/css-ui-4/#appearance-semantics
+            // ... all the existing checkbox/radio code stays the same ...
             Math::Rectf rect = {14, 14};
 
             Rc<Scene::Stack> box = makeRc<Scene::Stack>();
@@ -460,6 +467,7 @@ static void _buildVoidElement(BuilderContext bc, Gc::Ref<Dom::Element> el) {
             _buildInputProse(bc, el);
         }
     } else if (el->qualifiedName == Html::IMG_TAG) {
+        logInfo("Detected IMG_TAG, calling _buildImage");
         _buildImage(bc, el);
     }
 }
@@ -927,6 +935,7 @@ export Box build(Gc::Ref<Dom::Document> doc) {
     }
 
     logDebugIf(dumpBoxes, "document boxes: {}", root);
+    logInfo("BUILD PHASE COMPLETE - returning root box");
 
     return root;
 }

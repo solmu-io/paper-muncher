@@ -231,7 +231,6 @@ Rc<Scene::Node> _paintSVGRoot(SVGRootFrag& svgRoot, Gfx::Color currentColor) {
     auto content = _paintSVGAggregate(svgRoot, currentColor, viewBox);
     return makeRc<Scene::Transform>(content, svgRoot.transf);
 }
-
 static void _paintFrag(Frag& frag, Scene::Stack& stack, Opt<UsedBorders> usedBorders = NONE) {
     auto& s = frag.style();
 
@@ -243,9 +242,13 @@ static void _paintFrag(Frag& frag, Scene::Stack& stack, Opt<UsedBorders> usedBor
     if (auto ic = frag.box->content.is<InlineBox>()) {
         stack.add(makeRc<Scene::Text>(frag.metrics.contentBox().topStart().cast<f64>(), ic->prose));
     } else if (auto image = frag.box->content.is<Rc<Scene::Node>>()) {
+        logInfo("PAINT: Found image in frag.box->content!");
         auto bound = (*image)->bound();
+        logInfo("PAINT: Image bound = {}x{}", bound.width, bound.height);
 
         auto contentBox = frag.metrics.contentBox().cast<f64>();
+        logInfo("PAINT: contentBox = {}x{} at ({},{})", contentBox.width, contentBox.height, contentBox.x, contentBox.y);
+        
         auto trans = Math::Trans2f::map(bound, contentBox);
         Rc<Scene::Node> node = makeRc<Scene::Transform>(*image, trans);
 
@@ -257,6 +260,7 @@ static void _paintFrag(Frag& frag, Scene::Stack& stack, Opt<UsedBorders> usedBor
             path.rect(contentBox, radii.cast<f64>());
             node = makeRc<Scene::Clip>(node, std::move(path));
         }
+        logInfo("PAINT: Adding image to stack");
         stack.add(node);
     } else if (auto svgRoot = frag.content.is<SVGRootFrag>()) {
         if (min(frag.metrics.borderSize.x, frag.metrics.borderSize.y) == 0_au)
@@ -270,6 +274,44 @@ static void _paintFrag(Frag& frag, Scene::Stack& stack, Opt<UsedBorders> usedBor
         );
     }
 }
+// static void _paintFrag(Frag& frag, Scene::Stack& stack, Opt<UsedBorders> usedBorders = NONE) {
+//     auto& s = frag.style();
+
+//     if (s.visibility == Visibility::HIDDEN)
+//         return;
+
+//     _paintFragBordersAndBackgrounds(frag, stack, usedBorders);
+
+//     if (auto ic = frag.box->content.is<InlineBox>()) {
+//         stack.add(makeRc<Scene::Text>(frag.metrics.contentBox().topStart().cast<f64>(), ic->prose));
+//     } else if (auto image = frag.box->content.is<Rc<Scene::Node>>()) {
+//         auto bound = (*image)->bound();
+
+//         auto contentBox = frag.metrics.contentBox().cast<f64>();
+//         auto trans = Math::Trans2f::map(bound, contentBox);
+//         Rc<Scene::Node> node = makeRc<Scene::Transform>(*image, trans);
+
+//         auto radii = frag.metrics.radii;
+//         if (radii.zero()) {
+//             node = makeRc<Scene::Clip>(node, contentBox);
+//         } else {
+//             Math::Path path;
+//             path.rect(contentBox, radii.cast<f64>());
+//             node = makeRc<Scene::Clip>(node, std::move(path));
+//         }
+//         stack.add(node);
+//     } else if (auto svgRoot = frag.content.is<SVGRootFrag>()) {
+//         if (min(frag.metrics.borderSize.x, frag.metrics.borderSize.y) == 0_au)
+//             return;
+
+//         stack.add(
+//             makeRc<Scene::Clip>(
+//                 _paintSVGRoot(*svgRoot, s.color),
+//                 frag.metrics.contentBox().cast<f64>()
+//             )
+//         );
+//     }
+// }
 
 static void _paintChildren(Frag& frag, Scene::Stack& stack, auto predicate) {
     Opt<Map<Box*, UsedBorders>> tableBoxBorderMapping;
