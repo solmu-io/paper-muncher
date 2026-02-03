@@ -25,6 +25,7 @@ static Opt<Rc<FormatingContext>> _constructFormatingContext(Box& box) {
     auto display = box.style->display;
 
     if (box.isReplaced()) {
+        logInfo("LAYOUT-IMPL: box is replaced, using ReplacedFormatingContext");  
         return constructReplacedFormatingContext(box);
     } else if (box.content.is<InlineBox>()) {
         return constructInlineFormatingContext(box);
@@ -49,15 +50,41 @@ static Opt<Rc<FormatingContext>> _constructFormatingContext(Box& box) {
     }
 }
 
+// Output _contentLayout(Tree& tree, Box& box, Input input, usize startAt, Opt<usize> stopAt) {
+//     if (box.formatingContext == NONE) {
+//         box.formatingContext = _constructFormatingContext(box);
+//         if (box.formatingContext)
+//             box.formatingContext.unwrap()->build(tree, box);
+//     }
+//     if (not box.formatingContext)
+//         return Output{};
+//     return box.formatingContext.unwrap()->run(tree, box, input, startAt, stopAt);
+// }
 Output _contentLayout(Tree& tree, Box& box, Input input, usize startAt, Opt<usize> stopAt) {
+    if (box.isReplaced()) {
+        logInfo("_contentLayout: isReplaced=true, formatingContext={}", box.formatingContext.has() ? "exists" : "NONE");
+    }
+    
     if (box.formatingContext == NONE) {
         box.formatingContext = _constructFormatingContext(box);
         if (box.formatingContext)
             box.formatingContext.unwrap()->build(tree, box);
     }
-    if (not box.formatingContext)
+    
+    if (not box.formatingContext) {
+        if (box.isReplaced()) {
+            logInfo("_contentLayout: NO formatingContext, returning empty Output!");
+        }
         return Output{};
-    return box.formatingContext.unwrap()->run(tree, box, input, startAt, stopAt);
+    }
+    
+    auto result = box.formatingContext.unwrap()->run(tree, box, input, startAt, stopAt);
+    
+    if (box.isReplaced()) {
+        logInfo("_contentLayout: run() returned size = {}x{}", result.size.x, result.size.y);
+    }
+    
+    return result;
 }
 
 InsetsAu computeMargins(Tree& tree, Box& box, Input input) {
@@ -265,6 +292,11 @@ Output layoutContentBox(Tree& tree, Box& box, Input input) {
         // TODO: Class C breakpoint
 
         auto out = _contentLayout(tree, box, input, startAt, NONE);
+        
+        // CORRECT - after out is defined
+        if (box.isReplaced()) {
+            logInfo("CONTENT_BOX (discovery): returning size = {}x{}", out.size.x, out.size.y);
+        }
 
         // NOTE: assert since algo is still a bit experimental
         if (not out.completelyLaidOut and out.breakpoint == NONE)
@@ -306,6 +338,10 @@ Output layoutContentBox(Tree& tree, Box& box, Input input) {
             tree.fc.enterMonolithicBox();
 
         auto out = _contentLayout(tree, box, input, startAt, stopAt);
+
+        if (box.isReplaced()) {
+            logInfo("CONTENT_BOX (commit): returning size = {}x{}", out.size.x, out.size.y);
+        }
 
         if (isMonolithicDisplay)
             tree.fc.leaveMonolithicBox();
@@ -358,6 +394,9 @@ Output layoutAndCommitContentBox(Tree& tree, Box& box, Input input, Frag& parent
     Frag currFrag(&box);
 
     auto output = layoutContentBox(tree, box, input.withFragment(&currFrag));
+    if (box.isReplaced()) {
+        logInfo("COMMIT: layoutContentBox returned output.size = {}x{}", output.size.x, output.size.y);
+    }
 
     currFrag.metrics = Metrics{
         .padding = usedSpacings.padding,
@@ -369,7 +408,10 @@ Output layoutAndCommitContentBox(Tree& tree, Box& box, Input input, Frag& parent
         .margin = usedSpacings.margin,
         .radii = computeRadii(tree, box, output.size + usedSpacings.borders.all() + usedSpacings.padding.all()),
     };
-
+     
+    if (box.isReplaced()) {
+        logInfo("COMMIT: replaced box metrics.borderSize = {}x{}", currFrag.metrics.borderSize.x, currFrag.metrics.borderSize.y);
+    }
     parentFrag.add(std::move(currFrag));
 
     return output;

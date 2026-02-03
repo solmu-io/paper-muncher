@@ -101,10 +101,33 @@ struct ReplacedFormatingContext : FormatingContext {
         Vec2Au size = {};
 
         if (auto image = box.content.is<Rc<Scene::Node>>()) {
-            size = (*image)->bound().size().cast<Au>();
-        } else if (auto svg = box.content.is<SVGRoot>()) {
+            auto intrinsicSize = (*image)->bound().size().cast<Au>();
+            logInfo("REPLACED: intrinsic image size = {}x{}", intrinsicSize.x, intrinsicSize.y);
+            
+            // Use CSS-specified size if available, otherwise use intrinsic size
+            // input.knownSize comes from CSS width/height properties
+            Au width = input.knownSize.x.unwrapOr(intrinsicSize.x);
+            Au height = input.knownSize.y.unwrapOr(intrinsicSize.y);
+            
+            // If only one dimension is specified, maintain aspect ratio
+            if (input.knownSize.x and not input.knownSize.y) {
+                // Width specified, calculate height from aspect ratio
+                f64 aspectRatio = (f64)intrinsicSize.x.cast<f64>() / (f64)intrinsicSize.y.cast<f64>();
+                height = Au{(isize)(width.cast<f64>() / aspectRatio)};
+            } else if (input.knownSize.y and not input.knownSize.x) {
+                // Height specified, calculate width from aspect ratio
+                f64 aspectRatio = (f64)intrinsicSize.x.cast<f64>() / (f64)intrinsicSize.y.cast<f64>();
+                width = Au{(isize)(height.cast<f64>() * aspectRatio)};
+            }
+            
+            size = {width, height};
+            logInfo("REPLACED: final image size = {}x{} (CSS: {}x{})", 
+                size.x, size.y,
+                input.knownSize.x.has() ? "specified" : "auto",
+                input.knownSize.y.has() ? "specified" : "auto");
+                
+        }else if (auto svg = box.content.is<SVGRoot>()) {
             auto aspectRatio = SVG::intrinsicAspectRatio(box.style->svg->viewBox, box.style->sizing->width, box.style->sizing->height);
-
             size = _defaultSizing(input.knownSize, aspectRatio, input.containingBlock);
 
             if (input.fragment) {
@@ -117,19 +140,21 @@ struct ReplacedFormatingContext : FormatingContext {
         }
 
         if (tree.fc.allowBreak() and not tree.fc.acceptsFit(
-                                         input.position.y,
-                                         size.y,
-                                         input.pendingVerticalSizes
-                                     )) {
+                                        input.position.y,
+                                        size.y,
+                                        input.pendingVerticalSizes
+                                    )) {
+            logInfo("REPLACED: image DOES NOT FIT, but returning actual size anyway");
             return {
-                .size = {},
-                .completelyLaidOut = false,
+                .size = size,
+                .completelyLaidOut = true,
                 .breakpoint = Breakpoint::overflow(),
                 .firstBaselineSet = BaselinePositionsSet::fromSinglePosition(size.y),
                 .lastBaselineSet = BaselinePositionsSet::fromSinglePosition(size.y),
             };
         }
 
+        logInfo("REPLACED: returning size = {}x{}, completelyLaidOut=True", size.x, size.y);
         return {
             .size = size,
             .completelyLaidOut = true,

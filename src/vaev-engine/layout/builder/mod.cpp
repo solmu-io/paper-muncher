@@ -323,14 +323,11 @@ static void _buildText(BuilderContext bc, Str text, Rc<Style::SpecifiedValues> p
 }
 
 static void _buildImage(BuilderContext bc, Gc::Ref<Dom::Element> el) {
-    logInfo("_buildImage called for element");
     if (not el->imageContent) {
         logWarn("IMG element has NO imageContent!");
         return;
     }
-    logInfo("IMG element HAS imageContent, setting bc.content()");
     bc.content() = el->imageContent.unwrap();
-    logInfo("bc.content() set successfully");
 }
 static void _buildInputProse(BuilderContext bc, Gc::Ref<Dom::Element> el) {
     auto font = el->specifiedValues()->fontFace;
@@ -406,8 +403,6 @@ SVGRoot _buildSVG(Gc::Ref<Dom::Element> el) {
 }
 
 static void _buildVoidElement(BuilderContext bc, Gc::Ref<Dom::Element> el) {
-    logInfo("_buildVoidElement called for: {}", el->qualifiedName);
-    
     if (el->qualifiedName == Html::INPUT_TAG) {
         // FIXME: Only support appearance: none for now
         // https://www.w3.org/TR/css-ui-4/#valdef-appearance-none
@@ -467,7 +462,6 @@ static void _buildVoidElement(BuilderContext bc, Gc::Ref<Dom::Element> el) {
             _buildInputProse(bc, el);
         }
     } else if (el->qualifiedName == Html::IMG_TAG) {
-        logInfo("Detected IMG_TAG, calling _buildImage");
         _buildImage(bc, el);
     }
 }

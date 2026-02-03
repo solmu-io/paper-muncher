@@ -249,7 +249,16 @@ static void _paintFrag(Frag& frag, Scene::Stack& stack, Opt<UsedBorders> usedBor
         auto contentBox = frag.metrics.contentBox().cast<f64>();
         logInfo("PAINT: contentBox = {}x{} at ({},{})", contentBox.width, contentBox.height, contentBox.x, contentBox.y);
         
-        auto trans = Math::Trans2f::map(bound, contentBox);
+        // Flip the source bounds to correct upside-down image
+        // Original bound has Y=0 at top, but image data has Y=0 at bottom
+        auto flippedBound = Math::Rectf{
+            bound.x,
+            bound.y + bound.height,
+            bound.width,
+            -bound.height
+        };
+        
+        auto trans = Math::Trans2f::map(flippedBound, contentBox);
         Rc<Scene::Node> node = makeRc<Scene::Transform>(*image, trans);
 
         auto radii = frag.metrics.radii;

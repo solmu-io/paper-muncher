@@ -109,6 +109,14 @@ Pair<Vec<Layout::Breakpoint>, Vec<PageLayoutInfos>> collectBreakPointsAndRunning
     Vec<PageLayoutInfos> pageInfos = {};
 
     while (true) {
+        logInfo("pagination: starting page {}", pageNumber);  // ADD THIS
+        
+        // Safety limit to prevent infinite loop
+        if (pageNumber > 500) {                               // ADD THIS
+            logError("pagination: too many pages ({}), likely infinite loop - aborting", pageNumber);
+            break;
+        }
+
         Style::Page page{
             .name = ""s,
             .number = pageNumber++,
@@ -166,6 +174,11 @@ Pair<Vec<Layout::Breakpoint>, Vec<PageLayoutInfos>> collectBreakPointsAndRunning
             context.contentTree,
             pageLayoutInput.withBreakpointTraverser(Layout::BreakpointTraverser(&prevBreakpoint))
         );
+
+        // ADD THIS LOGGING:
+        logInfo("pagination: page {} - completelyLaidOut={}", 
+            pageNumber - 1,  // pageNumber was already incremented
+            outDiscovery.completelyLaidOut);
 
         Layout::Breakpoint currBreakpoint =
             outDiscovery.completelyLaidOut

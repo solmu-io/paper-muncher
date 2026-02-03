@@ -84,6 +84,21 @@ struct InlineFormatingContext : FormatingContext {
                 usedSpacings.padding.vertical() + usedSpacings.borders.vertical()
             );
 
+            // Handle replaced elements (images) with intrinsic size
+            if (atomicBox.isReplaced() and (not childInput.knownSize.width or not childInput.knownSize.height)) {
+                if (auto image = atomicBox.content.is<Rc<Scene::Node>>()) {
+                    auto intrinsicSize = (*image)->bound().size().cast<Au>();
+                    if (not childInput.knownSize.width) {
+                        childInput.knownSize.width = intrinsicSize.x + 
+                            usedSpacings.padding.horizontal() + usedSpacings.borders.horizontal();
+                    }
+                    if (not childInput.knownSize.height) {
+                        childInput.knownSize.height = intrinsicSize.y +
+                            usedSpacings.padding.vertical() + usedSpacings.borders.vertical();
+                    }
+                }
+            }
+
             // NOTE: We set the same availableSpace to child inline boxes since line wrapping is possible i.e. in the
             // worst case, they will take up the whole availableSpace, and a line break will be done right before them
             auto atomicBoxOutput = layoutBorderBox(tree, atomicBox, childInput, usedSpacings);
