@@ -104,28 +104,49 @@ struct ReplacedFormatingContext : FormatingContext {
             auto intrinsicSize = (*image)->bound().size().cast<Au>();
             logInfo("REPLACED: intrinsic image size = {}x{}", intrinsicSize.x, intrinsicSize.y);
             
-            // Use CSS-specified size if available, otherwise use intrinsic size
-            // input.knownSize comes from CSS width/height properties
-            Au width = input.knownSize.x.unwrapOr(intrinsicSize.x);
-            Au height = input.knownSize.y.unwrapOr(intrinsicSize.y);
+            // Start with intrinsic size
+            Au width = intrinsicSize.x;
+            Au height = intrinsicSize.y;
+            f64 aspectRatio = intrinsicSize.x.cast<f64>() / intrinsicSize.y.cast<f64>();
             
-            // If only one dimension is specified, maintain aspect ratio
-            if (input.knownSize.x and not input.knownSize.y) {
-                // Width specified, calculate height from aspect ratio
-                f64 aspectRatio = (f64)intrinsicSize.x.cast<f64>() / (f64)intrinsicSize.y.cast<f64>();
-                height = Au{(isize)(width.cast<f64>() / aspectRatio)};
-            } else if (input.knownSize.y and not input.knownSize.x) {
-                // Height specified, calculate width from aspect ratio
-                f64 aspectRatio = (f64)intrinsicSize.x.cast<f64>() / (f64)intrinsicSize.y.cast<f64>();
-                width = Au{(isize)(height.cast<f64>() * aspectRatio)};
+            // Apply explicit width/height from CSS if specified
+            if (input.knownSize.x) {
+                width = input.knownSize.x.unwrap();
+                if (not input.knownSize.y) {
+                    // Maintain aspect ratio
+                    height = Au{(isize)(width.cast<f64>() / aspectRatio)};
+                }
+            }
+            if (input.knownSize.y) {
+                height = input.knownSize.y.unwrap();
+                if (not input.knownSize.x) {
+                    // Maintain aspect ratio
+                    width = Au{(isize)(height.cast<f64>() * aspectRatio)};
+                }
+            }
+            
+            // Apply max-width constraint
+            auto& sizing = box.style->sizing;
+            if (auto maxWidthCalc = sizing->maxWidth.is<CalcValue<PercentOr<Length>>>()) {
+                Au maxWidth = resolve(tree, box, *maxWidthCalc, input.containingBlock.x);
+                if (width > maxWidth) {
+                    width = maxWidth;
+                    height = Au{(isize)(width.cast<f64>() / aspectRatio)};
+                }
+            }
+            
+            // Apply max-height constraint
+            if (auto maxHeightCalc = sizing->maxHeight.is<CalcValue<PercentOr<Length>>>()) {
+                Au maxHeight = resolve(tree, box, *maxHeightCalc, input.containingBlock.y);
+                if (height > maxHeight) {
+                    height = maxHeight;
+                    width = Au{(isize)(height.cast<f64>() * aspectRatio)};
+                }
             }
             
             size = {width, height};
-            logInfo("REPLACED: final image size = {}x{} (CSS: {}x{})", 
-                size.x, size.y,
-                input.knownSize.x.has() ? "specified" : "auto",
-                input.knownSize.y.has() ? "specified" : "auto");
-                
+            logInfo("REPLACED: final image size = {}x{} (containingBlock: {}x{})", 
+                size.x, size.y, input.containingBlock.x, input.containingBlock.y);
         }else if (auto svg = box.content.is<SVGRoot>()) {
             auto aspectRatio = SVG::intrinsicAspectRatio(box.style->svg->viewBox, box.style->sizing->width, box.style->sizing->height);
             size = _defaultSizing(input.knownSize, aspectRatio, input.containingBlock);
