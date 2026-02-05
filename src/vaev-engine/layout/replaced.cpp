@@ -102,7 +102,6 @@ struct ReplacedFormatingContext : FormatingContext {
 
         if (auto image = box.content.is<Rc<Scene::Node>>()) {
             auto intrinsicSize = (*image)->bound().size().cast<Au>();
-            logInfo("REPLACED: intrinsic image size = {}x{}", intrinsicSize.x, intrinsicSize.y);
             
             // Start with intrinsic size
             Au width = intrinsicSize.x;
@@ -145,8 +144,7 @@ struct ReplacedFormatingContext : FormatingContext {
             }
             
             size = {width, height};
-            logInfo("REPLACED: final image size = {}x{} (containingBlock: {}x{})", 
-                size.x, size.y, input.containingBlock.x, input.containingBlock.y);
+            size.x, size.y, input.containingBlock.x, input.containingBlock.y);
         }else if (auto svg = box.content.is<SVGRoot>()) {
             auto aspectRatio = SVG::intrinsicAspectRatio(box.style->svg->viewBox, box.style->sizing->width, box.style->sizing->height);
             size = _defaultSizing(input.knownSize, aspectRatio, input.containingBlock);
@@ -165,7 +163,6 @@ struct ReplacedFormatingContext : FormatingContext {
                                         size.y,
                                         input.pendingVerticalSizes
                                     )) {
-            logInfo("REPLACED: image DOES NOT FIT, but returning actual size anyway");
             return {
                 .size = size,
                 .completelyLaidOut = true,
@@ -175,7 +172,6 @@ struct ReplacedFormatingContext : FormatingContext {
             };
         }
 
-        logInfo("REPLACED: returning size = {}x{}, completelyLaidOut=True", size.x, size.y);
         return {
             .size = size,
             .completelyLaidOut = true,

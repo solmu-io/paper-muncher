@@ -324,7 +324,6 @@ static void _buildText(BuilderContext bc, Str text, Rc<Style::SpecifiedValues> p
 
 static void _buildImage(BuilderContext bc, Gc::Ref<Dom::Element> el) {
     if (not el->imageContent) {
-        logWarn("IMG element has NO imageContent!");
         return;
     }
     bc.content() = el->imageContent.unwrap();
@@ -411,7 +410,6 @@ static void _buildVoidElement(BuilderContext bc, Gc::Ref<Dom::Element> el) {
         if (type == "hidden") {
             // Don't generate a box
         } else if (type == "radio" or type == "checkbox") {
-            // ... all the existing checkbox/radio code stays the same ...
             Math::Rectf rect = {14, 14};
 
             Rc<Scene::Stack> box = makeRc<Scene::Stack>();
@@ -929,7 +927,6 @@ export Box build(Gc::Ref<Dom::Document> doc) {
     }
 
     logDebugIf(dumpBoxes, "document boxes: {}", root);
-    logInfo("BUILD PHASE COMPLETE - returning root box");
 
     return root;
 }
