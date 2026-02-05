@@ -6,8 +6,8 @@
     "description": "An experimental document-generation tool",
     "extern": {
         "skift/karm": {
-            "git": "https://codeberg.org/skift/karm.git",
-            "tag": "main"
+            "git": "https://github.com/solmu-io/karm.git",
+            "tag": "fix-jpeg"
         },
         "cute-engineering/cat": {
             "git": "https://codeberg.org/cute-engineering/cat.git",

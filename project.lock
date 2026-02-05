@@ -41,20 +41,15 @@
             "git": "https://codeberg.org/cute-engineering/ce-targets.git",
             "tag": "v0.6.0"
         },
-        "skift-org/karm": {
-            "commit": "7ccfc3b3cd52ab4a305acaae126b461620a76dab",
-            "git": "https://codeberg.org/skift/karm.git",
-            "tag": "main"
-        },
         "skift/assets": {
             "commit": "d311e1f13f9d6d91fc2aa5a6c896ef6a714363e6",
             "git": "https://codeberg.org/skift/assets.git",
             "tag": "main"
         },
         "skift/karm": {
-            "commit": "b26ada6600d55ee468cb0282f719657618805665",
-            "git": "https://codeberg.org/skift/karm.git",
-            "tag": "main"
+            "commit": "913b093f673eb3a42570677b93d53ad51cd78e13",
+            "git": "https://github.com/solmu-io/karm.git",
+            "tag": "fix-jpeg"
         }
     }
 }
