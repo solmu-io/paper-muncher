@@ -131,11 +131,9 @@ export Async::Task<> runAsync(
     );
 
     for (auto& input : inputs) {
-        logInfo("loading {}...", input);
         auto window = Vaev::Dom::Window::create(client);
         co_trya$(window->loadLocationAsync(input, Ref::Uti::PUBLIC_OPEN, ct));
 
-        logInfo("rendering {}...", input);
         if (options.flow == Flow::PAGINATE) {
             auto settings = options.preparePrintSettings();
             window->print(settings) | forEach([&](Print::Page& page) {
@@ -179,7 +177,6 @@ export Async::Task<> runAsync(
         }
     }
 
-    logInfo("saving {}...", output);
     Io::BufferWriter bw;
     co_try$(printer->write(bw));
     co_trya$(client->doAsync(
