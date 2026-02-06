@@ -144,7 +144,6 @@ struct ReplacedFormatingContext : FormatingContext {
             }
             
             size = {width, height};
-            size.x, size.y, input.containingBlock.x, input.containingBlock.y);
         }else if (auto svg = box.content.is<SVGRoot>()) {
             auto aspectRatio = SVG::intrinsicAspectRatio(box.style->svg->viewBox, box.style->sizing->width, box.style->sizing->height);
             size = _defaultSizing(input.knownSize, aspectRatio, input.containingBlock);
