@@ -5,6 +5,10 @@
 #include <string>
 #include <exception>
 
+#ifndef BUILD_DIGEST
+#define BUILD_DIGEST "unknown"
+#endif
+
 static thread_local std::string last_error;
 static void set_error(const std::string& err) { last_error = err; }
 
@@ -95,6 +99,10 @@ int pm_html_to_pdf_buffer(
         set_error(e.what());
         return -1;
     }
+}
+
+const char* pm_build_digest(void) {
+    return BUILD_DIGEST;
 }
 
 void pm_free(void* ptr) { std::free(ptr); }
