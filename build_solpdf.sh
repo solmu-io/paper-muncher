@@ -244,18 +244,31 @@ echo "  ✓ No SDL contamination"
 
 echo "▶ Step 8: Copying outputs to $OUTPUT_DIR..."
 
-mkdir -p "$OUTPUT_DIR/bundle/vaev-engine/__res__"
-mkdir -p "$OUTPUT_DIR/bundle/vaev-script/__res__/runtime"
-
+mkdir -p "$OUTPUT_DIR"
 cp "$TMP_DIR/$SO_NAME" "$OUTPUT_DIR/$SO_NAME"
 
-cp "$BUILD_DIR/vaev-engine/__res__/"* \
-   "$OUTPUT_DIR/bundle/vaev-engine/__res__/"
+for bundle_dir in "$BUILD_DIR"/*/__res__; do
+    if [[ -d "$bundle_dir" ]] && ls "$bundle_dir"/* &>/dev/null; then
+        bundle_name="$(basename "$(dirname "$bundle_dir")")"
+        mkdir -p "$OUTPUT_DIR/bundle/$bundle_name/__res__"
+        cp -r "$bundle_dir/"* "$OUTPUT_DIR/bundle/$bundle_name/__res__/"
+    fi
+done
 
-if [[ -f "$BUILD_DIR/vaev-script/__res__/runtime/index.js" ]]; then
-    cp "$BUILD_DIR/vaev-script/__res__/runtime/index.js" \
-       "$OUTPUT_DIR/bundle/vaev-script/__res__/runtime/"
-fi
+cat > "$OUTPUT_DIR/BUILD_INFO" <<EOF
+build_digest=$BUILD_DIGEST
+paper_muncher_sha=$PM_SHA
+karm_sha=$KARM_SHA
+built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+built_on=$(hostname)
+clang_version=$(clang++-21 --version | head -1)
+EOF
+
+echo "  Copied $SO_NAME"
+echo "  Copied bundle resources"
+echo "  Wrote BUILD_INFO"
+
+# ─── Done ────────────────────────────────────────────────────────────────────
 
 cat > "$OUTPUT_DIR/BUILD_INFO" <<EOF
 build_digest=$BUILD_DIGEST
