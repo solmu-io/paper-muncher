@@ -1,0 +1,20 @@
+{
+    "$schema": "https://schemas.cute.engineering/stable/cutekit.manifest.component.v1",
+    "id": "paper-muncher-lib",
+    "description": "Paper Muncher shared library with C API",
+    "type": "lib",
+    "props": {
+        "cpp-excluded": true,
+        "cpp-flags": ["-fPIC"]
+    },
+    "requires": [
+        "karm-sys",
+        "karm-image",
+        "vaev-engine",
+        "fonts-all",
+        "karm-http"
+    ],
+    "provides": [
+        "pm-lib"
+    ]
+}
