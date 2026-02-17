@@ -59,6 +59,29 @@ fi
 PM_DIR="$(cd "$PM_DIR" && pwd)"
 OUTPUT_DIR="${OUTPUT_DIR:-$SCRIPT_DIR/dist}"
 
+# ─── Step 0: Fresh clone for reproducible builds ────────────────────────────
+
+echo "▶ Step 0: Creating fresh shallow clone for reproducible build..."
+
+# set the remote URL and current branch from the existing repo
+PM_REMOTE="git@github.com:solmu-io/paper-muncher.git"
+PM_BRANCH="fix-image-rendering"
+
+CLONE_DIR="$TMP_DIR/paper-muncher"
+git clone --depth 1 --branch "$PM_BRANCH" "$PM_REMOTE" "$CLONE_DIR"
+
+# Check for uncommitted local changes and warn
+if [[ -n "$(git -C "$PM_DIR" status --porcelain)" ]]; then
+    echo "  ⚠ WARNING: Local repo has uncommitted changes that won't be in this build."
+    echo "  Commit and push before building for a fully reproducible build."
+fi
+
+# Use the fresh clone from now on
+PM_DIR="$CLONE_DIR"
+cd "$PM_DIR"
+
+echo "  Cloned $PM_REMOTE ($PM_BRANCH) into $CLONE_DIR"
+
 # ─── Validate prerequisites ─────────────────────────────────────────────────
 
 echo "═══════════════════════════════════════════════════════════════"
