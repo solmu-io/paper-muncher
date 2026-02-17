@@ -59,6 +59,34 @@ fi
 PM_DIR="$(cd "$PM_DIR" && pwd)"
 OUTPUT_DIR="${OUTPUT_DIR:-$SCRIPT_DIR/dist}"
 
+# ─── Step 0: Fresh clone for reproducible builds ────────────────────────────
+
+echo "▶ Step 0: Creating fresh shallow clone for reproducible build..."
+
+# Get the remote URL and current branch from the existing repo
+if [[ -d "$PM_DIR/.git" ]]; then
+    PM_REMOTE=$(git -C "$PM_DIR" remote get-url origin)
+    PM_BRANCH=$(git -C "$PM_DIR" rev-parse --abbrev-ref HEAD)
+else
+    echo "ERROR: $PM_DIR is not a git repository."
+    exit 1
+fi
+
+CLONE_DIR="$TMP_DIR/paper-muncher"
+git clone --depth 1 --branch "$PM_BRANCH" "$PM_REMOTE" "$CLONE_DIR"
+
+# Check for uncommitted local changes and warn
+if [[ -n "$(git -C "$PM_DIR" status --porcelain)" ]]; then
+    echo "  ⚠ WARNING: Local repo has uncommitted changes that won't be in this build."
+    echo "  Commit and push before building for a fully reproducible build."
+fi
+
+# Use the fresh clone from now on
+PM_DIR="$CLONE_DIR"
+cd "$PM_DIR"
+
+echo "  Cloned $PM_REMOTE ($PM_BRANCH) into $CLONE_DIR"
+
 # ─── Validate prerequisites ─────────────────────────────────────────────────
 
 echo "═══════════════════════════════════════════════════════════════"
