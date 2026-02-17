@@ -22,8 +22,8 @@ import Karm.Image;
 using namespace Karm;
 
 // This code originates from Paper Muncher:
-// TODO: add the link
-// TODO: add the license information
+// https://github.com/odoo/paper-muncher
+// GNU Affero General Public License v3.0
 namespace SolPDF {
 
 // --- Duplicated from PaperMuncher (src/mod.cpp) to avoid module dependency ---
