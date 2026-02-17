@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 
-namespace paper_muncher {
+namespace SolPDF {
 
 struct Options {
     std::string output_format;
@@ -28,4 +28,4 @@ std::vector<unsigned char> html_to_pdf(
     const Options& opts
 );
 
-} // namespace paper_muncher
+} // namespace SolPDF

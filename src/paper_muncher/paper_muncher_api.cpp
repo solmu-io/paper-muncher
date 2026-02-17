@@ -12,8 +12,8 @@
 static thread_local std::string last_error;
 static void set_error(const std::string& err) { last_error = err; }
 
-static paper_muncher::Options parse_options_json(const char* json) {
-    paper_muncher::Options opts;
+static SolPDF::Options parse_options_json(const char* json) {
+    SolPDF::Options opts;
     if (!json) return opts;
 
     // Minimal JSON parsing — extract known fields
@@ -60,7 +60,7 @@ int pm_init(const char* bundle_dir) {
         if (bundle_dir) {
             setenv("CK_BUILDDIR", bundle_dir, 1);
         }
-        paper_muncher::init();
+        SolPDF::init();
         return 0;
     } catch (const std::exception& e) {
         set_error(e.what());
@@ -69,7 +69,7 @@ int pm_init(const char* bundle_dir) {
 }
 
 void pm_shutdown(void) {
-    try { paper_muncher::shutdown(); } catch (...) {}
+    try { SolPDF::shutdown(); } catch (...) {}
 }
 
 int pm_html_to_pdf_buffer(
@@ -85,7 +85,7 @@ int pm_html_to_pdf_buffer(
 
     try {
         auto opts = parse_options_json(options_json);
-        auto pdf = paper_muncher::html_to_pdf(std::string(html), opts);
+        auto pdf = SolPDF::html_to_pdf(std::string(html), opts);
 
         auto* buf = static_cast<unsigned char*>(std::malloc(pdf.size()));
         if (!buf) { set_error("out of memory"); return -1; }

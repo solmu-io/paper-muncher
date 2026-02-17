@@ -24,8 +24,7 @@ using namespace Karm;
 // This code originates from Paper Muncher:
 // TODO: add the link
 // TODO: add the license information
-// namespace SolPDF {
-namespace paper_muncher {
+namespace SolPDF {
 
 // --- Duplicated from PaperMuncher (src/mod.cpp) to avoid module dependency ---
 // The methods we need do not justify depending on the whole module and can be rewritten.
@@ -187,4 +186,4 @@ std::vector<unsigned char> html_to_pdf(
     return out;
 }
 
-} // namespace paper_muncher
+} // namespace SolPDF
