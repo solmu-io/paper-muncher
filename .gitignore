@@ -16,3 +16,4 @@ examples/
 tmp/
 dist/
 *.so
+project.lock
