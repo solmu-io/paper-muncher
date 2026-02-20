@@ -225,7 +225,8 @@ echo "▶ Step 6: Linking $SO_NAME..."
 
 clang++-21 -shared -o "$TMP_DIR/$SO_NAME" \
     $(cat "$TMP_DIR/objects_final.txt") \
-    -lfontconfig -lfreetype -lz -lpng -lbz2 -ljpeg -luring -lseccomp
+    -lfontconfig -lfreetype -lz -lpng -lbz2 -ljpeg -luring -lseccomp \
+    -lharfbuzz-subset -lharfbuzz
 
 echo "  Linked successfully."
 echo "  File: $(file "$TMP_DIR/$SO_NAME")"
