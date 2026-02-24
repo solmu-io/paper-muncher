@@ -56,23 +56,22 @@ static SolPDF::Options parse_options_json(const char* json) {
 }
 
 extern "C" {
-
-PM_API int pm_init(const char* bundle_dir) {
-    try {
-        if (bundle_dir) {
-            setenv("CK_BUILDDIR", bundle_dir, 1);
+    PM_API int pm_init(const char* bundle_dir) {
+        try {
+            if (bundle_dir) {
+                setenv("CK_BUILDDIR", bundle_dir, 1);
+            }
+            SolPDF::init();
+            return 0;
+        } catch (const std::exception& e) {
+            set_error(e.what());
+            return -1;
         }
-        SolPDF::init();
-        return 0;
-    } catch (const std::exception& e) {
-        set_error(e.what());
-        return -1;
     }
-}
 
-PM_API void pm_shutdown(void) {
-    try { SolPDF::shutdown(); } catch (...) {}
-}
+    PM_API void pm_shutdown(void) {
+        try { SolPDF::shutdown(); } catch (...) {}
+    }
 
 PM_API int pm_html_to_pdf_buffer(
     const char* html,

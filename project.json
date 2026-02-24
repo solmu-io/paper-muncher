@@ -7,7 +7,7 @@
     "extern": {
         "skift/karm": {
             "git": "https://github.com/solmu-io/karm.git",
-            "tag": "fix-jpeg"
+            "tag": "fix/liburing-legacy"
         },
         "cute-engineering/cat": {
             "git": "https://codeberg.org/cute-engineering/cat.git",

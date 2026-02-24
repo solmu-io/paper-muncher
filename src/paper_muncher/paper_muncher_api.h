@@ -6,26 +6,6 @@ extern "C" {
 #endif
 
 /* ------------------------------------------------------------------
- * Initialization / shutdown
- * ------------------------------------------------------------------ */
-
-/**
- * Initialize the paper-muncher engine.
- *
- * bundle_dir - path to the CuteKit build directory containing __res__ folders.
- *              If NULL, uses CK_BUILDDIR environment variable.
- *
- * Returns 0 on success, non-zero on error.
- */
-int pm_init(const char* bundle_dir);
-
-/**
- * Cleanup global resources.
- * Safe to call multiple times.
- */
-void pm_shutdown(void);
-
-/* ------------------------------------------------------------------
  * HTML → PDF (in-memory)
  * ------------------------------------------------------------------ */
 
