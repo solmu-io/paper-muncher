@@ -9,6 +9,8 @@
 #define BUILD_DIGEST "unknown"
 #endif
 
+#define PM_API __attribute__((visibility("default")))
+
 static thread_local std::string last_error;
 static void set_error(const std::string& err) { last_error = err; }
 
@@ -55,7 +57,7 @@ static SolPDF::Options parse_options_json(const char* json) {
 
 extern "C" {
 
-int pm_init(const char* bundle_dir) {
+PM_API int pm_init(const char* bundle_dir) {
     try {
         if (bundle_dir) {
             setenv("CK_BUILDDIR", bundle_dir, 1);
@@ -68,11 +70,11 @@ int pm_init(const char* bundle_dir) {
     }
 }
 
-void pm_shutdown(void) {
+PM_API void pm_shutdown(void) {
     try { SolPDF::shutdown(); } catch (...) {}
 }
 
-int pm_html_to_pdf_buffer(
+PM_API int pm_html_to_pdf_buffer(
     const char* html,
     const char* options_json,
     unsigned char** out_pdf,
@@ -101,13 +103,13 @@ int pm_html_to_pdf_buffer(
     }
 }
 
-const char* pm_build_digest(void) {
+PM_API const char* pm_build_digest(void) {
     return BUILD_DIGEST;
 }
 
-void pm_free(void* ptr) { std::free(ptr); }
+PM_API void pm_free(void* ptr) { std::free(ptr); }
 
-const char* pm_last_error(void) {
+PM_API const char* pm_last_error(void) {
     return last_error.empty() ? nullptr : last_error.c_str();
 }
 
