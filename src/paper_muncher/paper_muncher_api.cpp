@@ -5,6 +5,8 @@
 #include <string>
 #include <exception>
 
+import Karm.Logger;
+
 #ifndef BUILD_DIGEST
 #define BUILD_DIGEST "unknown"
 #endif

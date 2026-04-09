@@ -8,6 +8,7 @@
         "cpp-flags": ["-fPIC"]
     },
     "requires": [
+        "karm-logger",
         "karm-sys",
         "karm-image",
         "vaev-engine",
