@@ -69,47 +69,51 @@ extern "C" {
         }
     }
 
+    PM_API void pm_set_log_level(int level) {
+        Karm::setLogLevel({level, "", {}});
+    }
+
     PM_API void pm_shutdown(void) {
         try { SolPDF::shutdown(); } catch (...) {}
     }
 
-PM_API int pm_html_to_pdf_buffer(
-    const char* html,
-    const char* options_json,
-    unsigned char** out_pdf,
-    unsigned long* out_size
-) {
-    if (!html || !out_pdf || !out_size) {
-        set_error("invalid arguments");
-        return -1;
+    PM_API int pm_html_to_pdf_buffer(
+        const char* html,
+        const char* options_json,
+        unsigned char** out_pdf,
+        unsigned long* out_size
+    ) {
+        if (!html || !out_pdf || !out_size) {
+            set_error("invalid arguments");
+            return -1;
+        }
+
+        try {
+            auto opts = parse_options_json(options_json);
+            auto pdf = SolPDF::html_to_pdf(std::string(html), opts);
+
+            auto* buf = static_cast<unsigned char*>(std::malloc(pdf.size()));
+            if (!buf) { set_error("out of memory"); return -1; }
+
+            std::memcpy(buf, pdf.data(), pdf.size());
+            *out_pdf = buf;
+            *out_size = static_cast<unsigned long>(pdf.size());
+
+            return 0;
+        } catch (const std::exception& e) {
+            set_error(e.what());
+            return -1;
+        }
     }
 
-    try {
-        auto opts = parse_options_json(options_json);
-        auto pdf = SolPDF::html_to_pdf(std::string(html), opts);
-
-        auto* buf = static_cast<unsigned char*>(std::malloc(pdf.size()));
-        if (!buf) { set_error("out of memory"); return -1; }
-
-        std::memcpy(buf, pdf.data(), pdf.size());
-        *out_pdf = buf;
-        *out_size = static_cast<unsigned long>(pdf.size());
-
-        return 0;
-    } catch (const std::exception& e) {
-        set_error(e.what());
-        return -1;
+    PM_API const char* pm_build_digest(void) {
+        return BUILD_DIGEST;
     }
-}
 
-PM_API const char* pm_build_digest(void) {
-    return BUILD_DIGEST;
-}
+    PM_API void pm_free(void* ptr) { std::free(ptr); }
 
-PM_API void pm_free(void* ptr) { std::free(ptr); }
-
-PM_API const char* pm_last_error(void) {
-    return last_error.empty() ? nullptr : last_error.c_str();
-}
+    PM_API const char* pm_last_error(void) {
+        return last_error.empty() ? nullptr : last_error.c_str();
+    }
 
 } // extern "C"
