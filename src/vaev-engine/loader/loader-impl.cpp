@@ -26,22 +26,20 @@ Async::Task<Rc<Scene::Node>> _fetchImageContentAsync(Http::Client& client, Ref::
         co_return Error::notFound("could not load image");
 
     auto body = resp->body.unwrap();
-
     auto data = co_trya$(Aio::readAllAsync(*body, ct));
+
     if (resp->header.contentType().unwrapOr(Ref::sniffBytes(data)) == "image/svg+xml"_mime) {
         auto subClient = makeRc<Http::Client>(client._transport);
         subClient->userAgent = client.userAgent;
         auto window = Dom::Window::create(subClient);
 
-        // FIXME: Properly determine the size of the SVG
-        // https://www.w3.org/TR/SVG2/coords.html#SizingSVGInCSS
         window->changeMedia(Style::Media::forRender({}, Resolution::fromDppx(1)));
         co_trya$(window->loadLocationAsync(url, Ref::Uti::PUBLIC_OPEN, ct));
         window->computeStyle();
         auto root = window->document()->documentElement();
         Layout::Resolver resolver;
 
-        // NOSPEC: The spec references a “default object size” but does not define explicit values.
+        // NOSPEC: The spec references a "default object size" but does not define explicit values.
         //         Historically, browsers (including Chrome) default to 300x150, as mentioned in older drafts:
         //         https://www.w3.org/TR/2011/WD-css3-images-20110908/#default-object-size
         auto width = resolver.resolve(root->specifiedValues()->sizing->width.unwrapOr<CalcValue<PercentOr<Length>>>(Length{300_au}), 300_au);

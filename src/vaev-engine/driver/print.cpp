@@ -59,25 +59,21 @@ void _paintMainMargin(Style::PageSpecifiedValues& pageStyle, Scene::Stack& stack
 }
 
 void _paintMargins(Style::PageSpecifiedValues& pageStyle, RectAu pageRect, RectAu pageContent, Scene::Stack& stack, usize currentPage, Layout::RunningPositionMap& runningPosition) {
-    // Compute all corner rects
     auto topLeftMarginCornerRect = RectAu::fromTwoPoint(pageRect.topStart(), pageContent.topStart());
     auto topRightMarginCornerRect = RectAu::fromTwoPoint(pageRect.topEnd(), pageContent.topEnd());
     auto bottomLeftMarginCornerRect = RectAu::fromTwoPoint(pageRect.bottomStart(), pageContent.bottomStart());
     auto bottomRightMarginCornerRect = RectAu::fromTwoPoint(pageRect.bottomEnd(), pageContent.bottomEnd());
 
-    // Paint corners
     _paintCornerMargin(pageStyle, stack, topLeftMarginCornerRect, Style::PageArea::TOP_LEFT_CORNER, currentPage, runningPosition);
     _paintCornerMargin(pageStyle, stack, topRightMarginCornerRect, Style::PageArea::TOP_RIGHT_CORNER, currentPage, runningPosition);
     _paintCornerMargin(pageStyle, stack, bottomLeftMarginCornerRect, Style::PageArea::BOTTOM_LEFT_CORNER, currentPage, runningPosition);
     _paintCornerMargin(pageStyle, stack, bottomRightMarginCornerRect, Style::PageArea::BOTTOM_RIGHT_CORNER, currentPage, runningPosition);
 
-    // Compute main area rects
     auto topRect = RectAu::fromTwoPoint(topLeftMarginCornerRect.topEnd(), topRightMarginCornerRect.bottomStart());
     auto bottomRect = RectAu::fromTwoPoint(bottomLeftMarginCornerRect.topEnd(), bottomRightMarginCornerRect.bottomStart());
     auto leftRect = RectAu::fromTwoPoint(topLeftMarginCornerRect.bottomEnd(), bottomLeftMarginCornerRect.topStart());
     auto rightRect = RectAu::fromTwoPoint(topRightMarginCornerRect.bottomEnd(), bottomRightMarginCornerRect.topStart());
 
-    // Paint main areas
     _paintMainMargin(pageStyle, stack, topRect, Style::PageArea::TOP, {Style::PageArea::TOP_LEFT, Style::PageArea::TOP_CENTER, Style::PageArea::TOP_RIGHT}, currentPage, runningPosition);
     _paintMainMargin(pageStyle, stack, bottomRect, Style::PageArea::BOTTOM, {Style::PageArea::BOTTOM_LEFT, Style::PageArea::BOTTOM_CENTER, Style::PageArea::BOTTOM_RIGHT}, currentPage, runningPosition);
     _paintMainMargin(pageStyle, stack, leftRect, Style::PageArea::LEFT, {Style::PageArea::LEFT_TOP, Style::PageArea::LEFT_MIDDLE, Style::PageArea::LEFT_BOTTOM}, currentPage, runningPosition);
@@ -110,6 +106,7 @@ Pair<Vec<Layout::Breakpoint>, Vec<PageLayoutInfos>> collectBreakPointsAndRunning
 
     while (true) {
         if (pageNumber > 500) {
+            logWarn("pagination: reached 500 page limit, stopping");
             break;
         }
 
@@ -124,8 +121,6 @@ Pair<Vec<Layout::Breakpoint>, Vec<PageLayoutInfos>> collectBreakPointsAndRunning
             context.media.width / Au{context.media.resolution.toDppx()},
             context.media.height / Au{context.media.resolution.toDppx()}
         };
-
-        auto pageSize = pageRect.size().cast<f64>();
 
         auto pageStack = makeRc<Scene::Stack>();
 
@@ -178,6 +173,16 @@ Pair<Vec<Layout::Breakpoint>, Vec<PageLayoutInfos>> collectBreakPointsAndRunning
 
         context.contentTree.fc.leaveDiscovery();
 
+        // Guard: if the breakpoint didn't advance from the previous one,
+        // pagination is stuck (e.g. an oversized replaced element that can't
+        // be fragmented). Force termination to avoid infinite page generation.
+        if (not outDiscovery.completelyLaidOut and
+            currBreakpoint.endIdx == prevBreakpoint.endIdx) {
+            logWarn("pagination: breakpoint did not advance (endIdx={}), content may overflow page", currBreakpoint.endIdx);
+            breakpoints.pushBack(Layout::Breakpoint::classB(1, false));
+            break;
+        }
+
         breakpoints.pushBack(currBreakpoint);
         if (outDiscovery.completelyLaidOut)
             break;
@@ -197,21 +202,17 @@ export Generator<Print::Page> print(Gc::Ref<Dom::Document> dom, Print::Settings 
     computer.build();
     computer.styleDocument(*dom);
 
-    // MARK: Page and Margins --------------------------------------------------
-
     Style::SpecifiedValues initialStyle = Style::SpecifiedValues::initial();
     initialStyle.color = Gfx::BLACK;
     initialStyle.setCustomProp("-vaev-url", {Css::Token::string(Io::format("\"{}\"", dom->url()))});
     initialStyle.setCustomProp("-vaev-title", {Css::Token::string(Io::format("\"{}\"", dom->title()))});
     initialStyle.setCustomProp("-vaev-datetime", {Css::Token::string(Io::format("\"{}\"", Sys::now()))});
 
-    // MARK: Page Content ------------------------------------------------------
-
     Layout::Tree contentTree = {
         Layout::build(dom),
     };
 
-    Layout::RunningPositionMap runningPosition = {}; // Mapping the different Running positions to their respective names and their page.
+    Layout::RunningPositionMap runningPosition = {};
     PaginationContext paginationContext{
         .contentTree = contentTree,
         .media = media,
