@@ -46,6 +46,8 @@ struct ValueParser<BreakBetween> {
             return Ok(BreakBetween::AVOID_PAGE);
         } else if (c.skip(Css::Token::ident("page"))) {
             return Ok(BreakBetween::PAGE);
+        } else if (c.skip(Css::Token::ident("always"))) {
+            return Ok(BreakBetween::PAGE);
         } else if (c.skip(Css::Token::ident("left"))) {
             return Ok(BreakBetween::LEFT);
         } else if (c.skip(Css::Token::ident("right"))) {

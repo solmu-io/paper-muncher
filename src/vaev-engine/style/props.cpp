@@ -1354,6 +1354,40 @@ export struct BreakBeforeProp {
     }
 };
 
+export struct PageBreakAfterProp {
+    BreakBetween value = initial();
+
+    static constexpr Str name() { return "page-break-after"; }
+
+    static constexpr BreakBetween initial() { return BreakBetween::AUTO; }
+
+    void apply(SpecifiedValues& c) const {
+        c.break_.cow().after = value;
+    }
+
+    Res<> parse(Cursor<Css::Sst>& c) {
+        value = try$(parseValue<BreakBetween>(c));
+        return Ok();
+    }
+};
+
+export struct PageBreakBeforeProp {
+    BreakBetween value = initial();
+
+    static constexpr Str name() { return "page-break-before"; }
+
+    static constexpr BreakBetween initial() { return BreakBetween::AUTO; }
+
+    void apply(SpecifiedValues& c) const {
+        c.break_.cow().before = value;
+    }
+
+    Res<> parse(Cursor<Css::Sst>& c) {
+        value = try$(parseValue<BreakBetween>(c));
+        return Ok();
+    }
+};
+
 // https://www.w3.org/TR/css-break-3/#break-within
 export struct BreakInsideProp {
     BreakInside value = initial();
@@ -3595,6 +3629,8 @@ using _StyleProp = Union<
     BreakAfterProp,
     BreakBeforeProp,
     BreakInsideProp,
+    PageBreakAfterProp,
+    PageBreakBeforeProp,
 
     // Flex
     FlexBasisProp,
