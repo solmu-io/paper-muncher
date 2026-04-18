@@ -221,8 +221,12 @@ export struct BreakpointTraverser {
     Opt<usize> getEnd() {
         if (currIteration == nullptr)
             return NONE;
+        // If endIdx is 0 or less than what getStart() would return,
+        // this is the final "completely laid out" sentinel — lay out everything
+        auto start = getStart();
+        if (start and currIteration->endIdx <= start.unwrap())
+            return NONE;
         return currIteration->endIdx;
     }
-};
 
 } // namespace Vaev::Layout
