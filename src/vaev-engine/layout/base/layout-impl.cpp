@@ -298,6 +298,10 @@ Output layoutContentBox(Tree& tree, Box& box, Input input) {
         Opt<usize> stopAt = tree.fc.allowBreak()
                                 ? input.breakpointTraverser.getEnd()
                                 : NONE;
+        logInfo("layoutContentBox commit: startAt={} stopAt={} children={}",
+        startAt,
+        stopAt.unwrapOr(9999),
+        box.children().len());
 
         if (box.style->position.is<RunningPosition>()) {
             return Output{
