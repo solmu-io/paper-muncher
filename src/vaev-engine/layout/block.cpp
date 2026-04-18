@@ -67,7 +67,9 @@ Res<None, Output> processBreakpointsAfterChild(Fragmentainer& fc, Breakpoint& cu
     }
 
     // FORCED BREAK
-    if (childBox.style->break_->after == BreakBetween::PAGE) {
+    if (childBox.style->break_->after == BreakBetween::PAGE or
+        childBox.style->break_->after == BreakBetween::LEFT or
+        childBox.style->break_->after == BreakBetween::RIGHT) {
         return Output{
             .size = currentBoxSize,
             .completelyLaidOut = false,
@@ -206,7 +208,9 @@ struct BlockFormatingContext : FormatingContext {
                 processBreakpointsBeforeChild(
                     i,
                     Vec2Au{inlineSize, blockSize},
-                    c.style->break_->before == BreakBetween::PAGE,
+                    c.style->break_->before == BreakBetween::PAGE or
+                    c.style->break_->before == BreakBetween::LEFT or
+                    c.style->break_->before == BreakBetween::RIGHT,
                     startAt
                 )
             );
