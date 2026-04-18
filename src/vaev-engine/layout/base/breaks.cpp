@@ -228,5 +228,6 @@ export struct BreakpointTraverser {
             return NONE;
         return currIteration->endIdx;
     }
+};
 
 } // namespace Vaev::Layout
