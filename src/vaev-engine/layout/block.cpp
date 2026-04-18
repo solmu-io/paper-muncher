@@ -271,15 +271,21 @@ struct BlockFormatingContext : FormatingContext {
                 firstBaselineSet = output.firstBaselineSet.translate(childInput.position.y - input.position.y);
             lastBaselineSet = output.lastBaselineSet.translate(childInput.position.y - input.position.y);
 
-            try$(processBreakpointsAfterChild(
-                tree.fc,
-                currentBreakpoint,
-                box,
-                i,
-                Vec2Au{inlineSize, blockSize},
-                output.completelyLaidOut
-            ));
-
+            {
+                auto breakResult = processBreakpointsAfterChild(tree.fc, currentBreakpoint, box, i,
+                    Vec2Au{inlineSize, blockSize}, output.completelyLaidOut);
+                if (not breakResult) {
+                    // Forced break — wrap with fromChild so parent traverser can descend
+                    auto earlyOut = breakResult.none();
+                    if (earlyOut.breakpoint) {
+                        maybeProcessChildBreakpoint(tree.fc, currentBreakpoint, i,
+                            box.style->break_->inside == BreakInside::AVOID,
+                            earlyOut.breakpoint);
+                        earlyOut.breakpoint = currentBreakpoint;
+                    }
+                    return earlyOut;
+                }
+            }
             if (tree.fc.allowBreak() and i + 1 == endChildren) {
                 blockWasCompletelyLaidOut = output.completelyLaidOut and i + 1 == box.children().len();
             }
