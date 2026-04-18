@@ -221,10 +221,9 @@ export struct BreakpointTraverser {
     Opt<usize> getEnd() {
         if (currIteration == nullptr)
             return NONE;
-        // If endIdx is 0 or less than what getStart() would return,
-        // this is the final "completely laid out" sentinel — lay out everything
-        auto start = getStart();
-        if (start and currIteration->endIdx <= start.unwrap())
+        // If currIteration->endIdx is less than or equal to where we're starting,
+        // this is the final "completely laid out" sentinel — no stop limit needed
+        if (prevIteration and currIteration->endIdx <= prevIteration->endIdx)
             return NONE;
         return currIteration->endIdx;
     }
