@@ -2,6 +2,7 @@ export module Vaev.Engine:layout.breaks;
 
 import Karm.Core;
 import Karm.Math;
+import Karm.Logger;
 
 using namespace Karm;
 
