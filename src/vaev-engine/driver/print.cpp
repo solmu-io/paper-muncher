@@ -171,7 +171,16 @@ Pair<Vec<Layout::Breakpoint>, Vec<PageLayoutInfos>> collectBreakPointsAndRunning
                 ? Layout::Breakpoint::classB(1, false)
                 : outDiscovery.breakpoint.unwrap();
 
+        logInfo("pagination: prevEndIdx={} currEndIdx={}",
+            prevBreakpoint.endIdx,
+            currBreakpoint.endIdx);
+
         context.contentTree.fc.leaveDiscovery();
+        logInfo("pagination discovery: page={} completelyLaidOut={} breakpoint endIdx={} appeal={}",
+            pageNumber - 1,
+            outDiscovery.completelyLaidOut,
+            outDiscovery.breakpoint ? outDiscovery.breakpoint.unwrap().endIdx : 999,
+            outDiscovery.breakpoint ? (int)outDiscovery.breakpoint.unwrap().appeal : -1);
 
         // Guard: if the breakpoint didn't advance from the previous one,
         // pagination is stuck (e.g. an oversized replaced element that can't
