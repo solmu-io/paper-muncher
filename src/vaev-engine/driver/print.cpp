@@ -182,12 +182,19 @@ Pair<Vec<Layout::Breakpoint>, Vec<PageLayoutInfos>> collectBreakPointsAndRunning
             outDiscovery.breakpoint ? outDiscovery.breakpoint.unwrap().endIdx : 999,
             outDiscovery.breakpoint ? (int)outDiscovery.breakpoint.unwrap().appeal : -1);
 
+            auto deepEndIdx = [](Layout::Breakpoint const& bp) -> usize {
+                Layout::Breakpoint const* curr = &bp;
+                while (curr->children.len() > 0 and curr->children[0])
+                    curr = &curr->children[0].unwrap();
+                return curr->endIdx;
+            };
+
         // Guard: if the breakpoint didn't advance from the previous one,
         // pagination is stuck (e.g. an oversized replaced element that can't
         // be fragmented). Force termination to avoid infinite page generation.
         if (not outDiscovery.completelyLaidOut and
-            currBreakpoint.endIdx == prevBreakpoint.endIdx) {
-            logWarn("pagination: breakpoint did not advance (endIdx={}), content may overflow page", currBreakpoint.endIdx);
+            deepEndIdx(currBreakpoint) == deepEndIdx(prevBreakpoint)) {
+            logWarn("pagination: stuck at deepEndIdx={}", deepEndIdx(currBreakpoint));
             breakpoints.pushBack(Layout::Breakpoint::classB(1, false));
             break;
         }
