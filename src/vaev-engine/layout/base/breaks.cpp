@@ -184,6 +184,10 @@ export struct BreakpointTraverser {
     }
 
     MutCursor<Breakpoint> traversePrev(usize i, usize j) {
+        logInfo("traversePrev: i={} j={} prevIteration={} children={}",
+            i, j,
+            prevIteration ? prevIteration->endIdx : 999,
+            prevIteration ? prevIteration->children.len() : 0);
         if (prevIteration and prevIteration->children.len() > 0 and
             (i + 1 == prevIteration->endIdx or
              (prevIteration->advance == Breakpoint::Advance::WITH_CHILDREN and i == prevIteration->endIdx))) {
@@ -215,6 +219,10 @@ export struct BreakpointTraverser {
     Opt<usize> getStart() {
         if (prevIteration == nullptr)
             return NONE;
+        logInfo("getStart: prevIteration endIdx={} advance={} children={}",
+            prevIteration->endIdx,
+            (int)prevIteration->advance,
+            prevIteration->children.len());
         return prevIteration->endIdx - (prevIteration->advance == Breakpoint::Advance::DONT);
     }
 
