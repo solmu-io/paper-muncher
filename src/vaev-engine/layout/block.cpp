@@ -21,6 +21,10 @@ void maybeProcessChildBreakpoint(Fragmentainer& fc, Breakpoint& currentBreakpoin
     // if we are in a monolitic context, we might not have breakpoints
     if (not maybeChildBreakpoint)
         return;
+    logInfo("maybeProcessChildBreakpoint: childIndex={} childBP.endIdx={} childBP.appeal={}",
+        childIndex,
+        maybeChildBreakpoint.unwrap().endIdx,
+        (int)maybeChildBreakpoint.unwrap().appeal);
 
     // breakpoint inside child (from this blocks perspective)
     // BREAK CLASS X (recursive case)
