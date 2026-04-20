@@ -70,12 +70,11 @@ Res<None, Output> processBreakpointsAfterChild(Fragmentainer& fc, Breakpoint& cu
     if (childBox.style->break_->after == BreakBetween::PAGE or
         childBox.style->break_->after == BreakBetween::LEFT or
         childBox.style->break_->after == BreakBetween::RIGHT) {
+        currentBreakpoint.overrideIfBetter(Breakpoint::forced(childIndex + 1));
         return Output{
             .size = currentBoxSize,
             .completelyLaidOut = false,
-            .breakpoint = Breakpoint::forced(
-                childIndex + 1
-            )
+            .breakpoint = currentBreakpoint
         };
     }
 
@@ -271,21 +270,9 @@ struct BlockFormatingContext : FormatingContext {
                 firstBaselineSet = output.firstBaselineSet.translate(childInput.position.y - input.position.y);
             lastBaselineSet = output.lastBaselineSet.translate(childInput.position.y - input.position.y);
 
-            {
-                auto breakResult = processBreakpointsAfterChild(tree.fc, currentBreakpoint, box, i,
-                    Vec2Au{inlineSize, blockSize}, output.completelyLaidOut);
-                if (not breakResult) {
-                    // Forced break — wrap with fromChild so parent traverser can descend
-                    auto earlyOut = breakResult.none();
-                    if (earlyOut.breakpoint) {
-                        maybeProcessChildBreakpoint(tree.fc, currentBreakpoint, i,
-                            box.style->break_->inside == BreakInside::AVOID,
-                            earlyOut.breakpoint);
-                        earlyOut.breakpoint = currentBreakpoint;
-                    }
-                    return earlyOut;
-                }
-            }
+            try$(processBreakpointsAfterChild(tree.fc, currentBreakpoint, box, i,
+                Vec2Au{inlineSize, blockSize}, output.completelyLaidOut));
+
             if (tree.fc.allowBreak() and i + 1 == endChildren) {
                 blockWasCompletelyLaidOut = output.completelyLaidOut and i + 1 == box.children().len();
             }
