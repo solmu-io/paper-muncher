@@ -1,6 +1,6 @@
 module;
 
-#include <karm-core/macros.h>
+#include <karm/macros>
 
 module Vaev.Engine;
 
@@ -156,9 +156,10 @@ Vec2Au computeIntrinsicContentSize(Tree& tree, Box& box, IntrinsicSize intrinsic
         {
             .intrinsic = intrinsic,
             .knownSize = {NONE, NONE},
-            .capmin = capmin
+            .capmin = capmin,
         },
-        0, NONE
+        0,
+        NONE
     );
 
     return output.size;
@@ -223,10 +224,10 @@ Opt<Au> computeSpecifiedBorderBoxHeight(Tree& tree, Box& box, Size size, Vec2Au 
 
 static Res<None, Output> _shouldAbortFragmentingBeforeLayout(Fragmentainer& fc, Input input) {
     if (not fc.acceptsFit(
-        input.position.y,
-        0_au,
-        input.pendingVerticalSizes
-    ))
+            input.position.y,
+            0_au,
+            input.pendingVerticalSizes
+        ))
         return Output{
             .size = Vec2Au{0_au, 0_au},
             .completelyLaidOut = false,
@@ -365,7 +366,7 @@ Output layoutAndCommitBorderBox(Tree& tree, Box& box, Input input, Frag& parentF
 }
 
 Output layoutAndCommitContentBox(Tree& tree, Box& box, Input input, Frag& parentFrag, UsedSpacings const& usedSpacings) {
-    Frag currFrag(&box);
+    Frag currFrag{box};
 
     auto output = layoutContentBox(tree, box, input.withFragment(&currFrag));
 

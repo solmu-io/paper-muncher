@@ -1,6 +1,6 @@
 module;
 
-#include <karm-core/macros.h>
+#include <karm/macros>
 
 export module Vaev.Engine:style.page;
 
@@ -52,19 +52,19 @@ export struct Page {
     bool blank;
 };
 
-export struct PageSpecifiedValues {
-    using Areas = Array<Dom::PseudoElement, toUnderlyingType(PageArea::_LEN)>;
+export struct PageComputedValues {
+    using Areas = Array<Gc::Ref<Dom::PseudoElement>, toUnderlyingType(PageArea::_LEN)>;
 
-    Rc<SpecifiedValues> style;
+    Rc<ComputedValues> style;
     Areas _areas;
 
-    PageSpecifiedValues(SpecifiedValues const& initial)
-        : style(makeRc<SpecifiedValues>(initial)),
-          _areas(Areas::fill([&](...) -> Dom::PseudoElement {
-              return {"::-vaev-page"_sym, makeRc<SpecifiedValues>(initial)};
+    PageComputedValues(Gc::Heap& heap, ComputedValues const& initial)
+        : style(makeRc<ComputedValues>(initial)),
+          _areas(Areas::fill([&](...) -> Gc::Ref<Dom::PseudoElement> {
+              return heap.alloc<Dom::PseudoElement>("::-vaev-page"_sym, makeRc<ComputedValues>(initial));
           })) {}
 
-    Dom::PseudoElement& area(PageArea margin) {
+    Gc::Ref<Dom::PseudoElement> area(PageArea margin) {
         return _areas[toUnderlyingType(margin)];
     }
 };
@@ -177,7 +177,7 @@ export struct PageSelector {
 
 export struct PageAreaRule {
     PageArea area;
-    Vec<StyleProp> props;
+    Vec<Rc<Property>> props;
 
     static Opt<PageArea> _parsePageArea(Css::Token tok) {
         Str name = next(tok.data);
@@ -193,16 +193,15 @@ export struct PageAreaRule {
         return NONE;
     }
 
-    static Opt<PageAreaRule> parse(Css::Sst const& sst) {
+    static Opt<PageAreaRule> parse(RegisteredPropertySet& propertyRegistry, Css::Sst const& sst) {
         PageAreaRule res;
 
         res.area = try$(_parsePageArea(sst.token));
 
         for (auto const& item : sst.content) {
             if (item == Css::Sst::DECL) {
-                auto prop = parseDeclaration<StyleProp>(item);
-                if (prop)
-                    res.props.pushBack(prop.take());
+                if (auto p = propertyRegistry.parseDeclaration(item, RegisteredPropertySet::TOP_LEVEL))
+                    res.props.pushBack(p.take());
             } else {
                 logWarnIf(DEBUG_PAGE, "unexpected item in style rule: {}", item);
             }
@@ -211,9 +210,18 @@ export struct PageAreaRule {
         return res;
     }
 
-    void apply(SpecifiedValues& c) const {
+    void apply(RegisteredPropertySet& registry, ComputedValues const& parent, ComputedValues& child) const {
         for (auto const& prop : props) {
-            prop.apply(c, c);
+            if (prop->isBogusProperty())
+                continue;
+
+            if (prop->isShorthandProperty()) {
+                for (auto& longhand : prop->expandShorthand(registry, parent, child)) {
+                    longhand->apply(parent, child);
+                }
+                continue;
+            }
+            prop->apply(parent, child);
         }
     }
 

@@ -1,8 +1,10 @@
 export module Vaev.Engine:html.token;
 
 import Karm.Core;
+import Karm.Diag;
 
 using namespace Karm;
+using namespace Karm::Literals;
 
 namespace Vaev::Html {
 
@@ -31,12 +33,13 @@ export struct HtmlToken {
     };
 
     Type type = NIL;
-    Symbol name = ""_sym;
+    Opt<Symbol> name = NONE;
     Rune rune = '\0';
     String data = ""s;
-    String publicIdent = ""s;
-    String systemIdent = ""s;
+    Opt<String> publicIdent = NONE;
+    Opt<String> systemIdent = NONE;
     Vec<Attr> attrs = {};
+    Io::LocSpan span = {};
     bool forceQuirks{false};
     bool selfClosing{false};
 
@@ -76,7 +79,7 @@ export struct HtmlToken {
 
 export struct HtmlSink {
     virtual ~HtmlSink() = default;
-    virtual void accept(HtmlToken& token) = 0;
+    virtual void accept(HtmlToken& token, Diag::Collector& diags) = 0;
 };
 
 } // namespace Vaev::Html

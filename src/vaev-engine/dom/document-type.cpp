@@ -5,6 +5,7 @@ import Karm.Core;
 import :dom.node;
 
 using namespace Karm;
+using namespace Karm::Literals;
 
 namespace Vaev::Dom {
 
@@ -18,7 +19,7 @@ export struct DocumentType : Node {
 
     DocumentType() = default;
 
-    DocumentType(Symbol name, String publicId, String systemId)
+    DocumentType(Symbol name, String publicId = ""s, String systemId = ""s)
         : name(name), publicId(publicId), systemId(systemId) {
     }
 

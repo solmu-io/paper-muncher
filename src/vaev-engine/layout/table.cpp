@@ -429,8 +429,8 @@ export struct TableFormatingContext : FormatingContext {
 
             // 3 … has the border-style which comes first in the following list:
             if (
-                Karm::indexOf(ORDERED_STYLES, candidate.style) <
-                Karm::indexOf(ORDERED_STYLES, currentlyWinningBorderProperties.style)
+                indexOf(ORDERED_STYLES, candidate.style) <
+                indexOf(ORDERED_STYLES, currentlyWinningBorderProperties.style)
             ) {
                 continue;
             }
@@ -697,10 +697,10 @@ export struct TableFormatingContext : FormatingContext {
 
         for (usize i = 0; i < grid.size.y; ++i) {
             for (usize j = 0; j < grid.size.x; ++j) {
-                bordersGrid.widthAt(i, j).top = bordersGrid.widthAt(i, j).top / 2_au;
-                bordersGrid.widthAt(i, j).bottom = bordersGrid.widthAt(i, j).bottom / 2_au;
-                bordersGrid.widthAt(i, j).end = bordersGrid.widthAt(i, j).end / 2_au;
-                bordersGrid.widthAt(i, j).start = bordersGrid.widthAt(i, j).start / 2_au;
+                bordersGrid.widthAt(i, j).top = bordersGrid.widthAt(i, j).top / 2;
+                bordersGrid.widthAt(i, j).bottom = bordersGrid.widthAt(i, j).bottom / 2;
+                bordersGrid.widthAt(i, j).end = bordersGrid.widthAt(i, j).end / 2;
+                bordersGrid.widthAt(i, j).start = bordersGrid.widthAt(i, j).start / 2;
             }
         }
 
@@ -741,7 +741,7 @@ export struct TableFormatingContext : FormatingContext {
         if (useBordersCollapse) {
             bordersStyleGrid.init(grid.size);
             computeBordersStructsCollapse(tree, box);
-            boxBorderMapping = Map<Box*, UsedBorders>{};
+            boxBorderMapping = Map<usize, UsedBorders>{};
         } else
             computeBordersStructsSeparate(tree);
     }
@@ -795,7 +795,7 @@ export struct TableFormatingContext : FormatingContext {
 
         auto [columnBorders, sumBorders] = getColumnBorders();
 
-        Au fixedWidthToAccount = Au{grid.size.x + 1} * spacing.x;
+        Au fixedWidthToAccount = spacing.x * (grid.size.x + 1);
 
         Vec<Opt<Au>> colWidthOrNone{};
         colWidthOrNone.resize(grid.size.x);
@@ -856,7 +856,7 @@ export struct TableFormatingContext : FormatingContext {
 
         if (emptyCols > 0) {
             if (sumColsWidths < tableUsedWidth - fixedWidthToAccount) {
-                Au toDistribute = (tableUsedWidth - fixedWidthToAccount - sumColsWidths) / Au{emptyCols};
+                Au toDistribute = (tableUsedWidth - fixedWidthToAccount - sumColsWidths) / emptyCols;
                 for (auto& w : colWidthOrNone)
                     if (w == NONE)
                         w = toDistribute;
@@ -864,7 +864,7 @@ export struct TableFormatingContext : FormatingContext {
         } else if (sumColsWidths < tableUsedWidth - fixedWidthToAccount) {
             Au toDistribute = (tableUsedWidth - fixedWidthToAccount - sumColsWidths);
             for (auto& w : colWidthOrNone) {
-                w = w.unwrap() + (toDistribute * w.unwrap()) / sumColsWidths;
+                w = w.unwrap() + toDistribute * (w.unwrap() / sumColsWidths);
             }
         }
 
@@ -970,14 +970,14 @@ export struct TableFormatingContext : FormatingContext {
                 }
 
                 if (cellMinWidth > currSumMinColWidth) {
-                    auto cellMinWidthContribution = (cellMinWidth - currSumMinColWidth) / Au{colSpan};
+                    auto cellMinWidthContribution = (cellMinWidth - currSumMinColWidth) / colSpan;
                     for (usize k = 0; k < colSpan; ++k) {
                         minColWidth[j + k] += cellMinWidthContribution;
                     }
                 }
 
                 if (cellMaxWidth > currSumMaxColWidth) {
-                    auto cellMaxWidthContribution = (cellMaxWidth - currSumMaxColWidth) / Au{colSpan};
+                    auto cellMaxWidthContribution = (cellMaxWidth - currSumMaxColWidth) / colSpan;
                     for (usize k = 0; k < colSpan; ++k) {
                         maxColWidth[j + k] += cellMaxWidthContribution;
                     }
@@ -1007,7 +1007,7 @@ export struct TableFormatingContext : FormatingContext {
             if (currSumOfGroupWidth >= columnGroupWidthValue)
                 continue;
 
-            Au toDistribute = (columnGroupWidthValue - currSumOfGroupWidth) / Au{group.end - group.start + 1};
+            auto toDistribute = (columnGroupWidthValue - currSumOfGroupWidth) / (group.end - group.start + 1);
             for (usize x = group.start; x <= group.end; ++x) {
                 minColWidth[x] += toDistribute;
             }
@@ -1075,7 +1075,7 @@ export struct TableFormatingContext : FormatingContext {
 
             tableUsedWidth = max(capmin, *knownSizeX);
 
-            auto sumMinWithoutPerc = iter(minWithoutPerc).sum();
+            auto sumMinWithoutPerc = iter(minWithoutPerc) | Sum();
             if (sumMinWithoutPerc > tableUsedWidth) {
                 tableUsedWidth = sumMinWithoutPerc;
                 colWidth = minWithoutPerc;
@@ -1084,12 +1084,12 @@ export struct TableFormatingContext : FormatingContext {
 
             auto [minWithPerc, maxWithPerc] = computeMinMaxAutoWidths(tree, grid.size.x, *knownSizeX);
 
-            auto sumMaxWithoutPerc = iter(maxWithoutPerc).sum();
+            auto sumMaxWithoutPerc = iter(maxWithoutPerc) | Sum();
             Vec<Au>& distWOPToUse = sumMaxWithoutPerc < tableUsedWidth ? maxWithoutPerc : minWithoutPerc;
             Vec<Au>& distWPToUse = sumMaxWithoutPerc < tableUsedWidth ? maxWithPerc : minWithPerc;
 
-            auto sumWithPerc = iter(distWPToUse).sum();
-            auto sumWithoutPerc = iter(distWOPToUse).sum();
+            auto sumWithPerc = iter(distWPToUse) | Sum();
+            auto sumWithoutPerc = iter(distWOPToUse) | Sum();
 
             if (sumWithPerc > tableUsedWidth) {
                 Au totalDiff = sumWithPerc - sumWithoutPerc;
@@ -1099,25 +1099,25 @@ export struct TableFormatingContext : FormatingContext {
                 for (usize j = 0; j < grid.size.x; ++j) {
                     if (distWPToUse[j] != distWOPToUse[j]) {
                         Au diff = distWPToUse[j] - distWOPToUse[j];
-                        distWOPToUse[j] += (diff * allowedGrowth) / totalDiff;
+                        distWOPToUse[j] += diff * (allowedGrowth / totalDiff);
                     }
                 }
                 colWidth = distWOPToUse;
             } else {
                 if (sumWithPerc == 0_au) {
                     for (auto& w : distWPToUse)
-                        w = tableUsedWidth / Au{grid.size.x};
+                        w = tableUsedWidth / grid.size.x;
                 } else {
                     auto toDistribute = tableUsedWidth - sumWithPerc;
                     for (auto& w : distWPToUse)
-                        w += (toDistribute * w) / sumWithPerc;
+                        w += toDistribute * (w / sumWithPerc);
                 }
                 colWidth = distWPToUse;
             }
         } else {
             auto [minColWidth, maxColWidth] = computeIntrinsicMinMaxAutoWidths(tree, grid.size.x);
-            auto sumMaxColWidths = iter(maxColWidth).sum();
-            auto sumMinColWidths = iter(minColWidth).sum();
+            auto sumMaxColWidths = iter(maxColWidth) | Sum();
+            auto sumMinColWidths = iter(minColWidth) | Sum();
 
             // TODO: Specs doesnt say if we should distribute extra width over columns;
             //       also would it be over min or max columns?
@@ -1285,13 +1285,15 @@ export struct TableFormatingContext : FormatingContext {
                     colWidth = minContent;
                 else if (input.intrinsic == IntrinsicSize::MAX_CONTENT) {
                     colWidth = maxContent;
-                } else
+                } else {
                     unreachable();
+                }
 
-                tableUsedWidth = iter(colWidth).sum();
+                tableUsedWidth = iter(colWidth) | Sum();
             }
-        } else
+        } else {
             computeFixedColWidths(tree, box, *input.knownSize.x);
+        }
 
         computeRowHeights(tree);
 
@@ -1299,14 +1301,14 @@ export struct TableFormatingContext : FormatingContext {
         rowHeightPref = PrefixSum<Au>{rowHeight};
 
         tableBoxSize = Vec2Au{
-            iter(colWidth).sum() + spacing.x * Au{grid.size.x + 1},
-            iter(rowHeight).sum() + spacing.y * Au{grid.size.y + 1},
+            (iter(colWidth) | Sum()) + spacing.x * (grid.size.x + 1),
+            (iter(rowHeight) | Sum()) + spacing.y * (grid.size.y + 1),
         };
 
         if (numOfHeaderRows) {
             headerSize = Vec2Au{
                 tableBoxSize.x,
-                rowHeightPref.query(0, numOfHeaderRows - 1) + spacing.y * Au{numOfHeaderRows + 1},
+                rowHeightPref.query(0, numOfHeaderRows - 1) + spacing.y * (numOfHeaderRows + 1),
             };
         }
 
@@ -1314,7 +1316,7 @@ export struct TableFormatingContext : FormatingContext {
             footerSize = Vec2Au{
                 tableBoxSize.x,
                 rowHeightPref.query(grid.size.y - numOfFooterRows, grid.size.y - 1) +
-                spacing.y * Au{numOfHeaderRows + 1},
+                    spacing.y * (numOfHeaderRows + 1),
             };
         }
     }
@@ -1334,7 +1336,7 @@ export struct TableFormatingContext : FormatingContext {
         };
     }
 
-    Opt<Map<Box*, UsedBorders>> boxBorderMapping;
+    Opt<Map<usize, UsedBorders>> boxBorderMapping;
 
     Tuple<Output, Au> layoutCell(Tree& tree, Input& input, TableCell& cell, MutCursor<Box> cellBox, usize startFrag, usize i, usize j, Au currPositionX, usize breakpointIndexOffset) {
         // breakpoint traversing for a cell that started in the previous fragmentainer is not trivial
@@ -1366,7 +1368,7 @@ export struct TableFormatingContext : FormatingContext {
         if (not boxStartedInPrevFragment) {
             verticalSize =
                 rowHeightPref.query(cell.anchorIdx.y, cell.anchorIdx.y + rowSpan - 1) +
-                spacing.y * Au{rowSpan - 1};
+                spacing.y * (rowSpan - 1);
         }
 
         // TODO: In CSS 2.2, the height of a cell box is the minimum
@@ -1379,7 +1381,7 @@ export struct TableFormatingContext : FormatingContext {
         auto colSpan = cell.box->style->table->colSpan;
         Input childInput{
             .knownSize = {
-                colWidthPref.query(j, j + colSpan - 1) + spacing.x * Au{colSpan - 1},
+                colWidthPref.query(j, j + colSpan - 1) + spacing.x * (colSpan - 1),
                 verticalSize,
             },
             .position = {currPositionX, startPositionY},
@@ -1397,8 +1399,8 @@ export struct TableFormatingContext : FormatingContext {
             .padding = computePaddings(tree, *cell.box, tableBoxSize),
             .borders = collapsedBorders
                            ? collapsedBorders->map([](auto b) {
-                               return b.width;
-                           })
+                                 return b.width;
+                             })
                            : computeBorders(tree, *cell.box),
         };
 
@@ -1407,7 +1409,7 @@ export struct TableFormatingContext : FormatingContext {
                               : layoutBorderBox(tree, *cell.box, childInput, usedSpacings);
 
         if (input.fragment and useBordersCollapse) {
-            boxBorderMapping->put(cellBox, *collapsedBorders);
+            boxBorderMapping->put((usize)cellBox.buf(), *collapsedBorders);
         }
 
         if (tree.fc.isDiscoveryMode()) {
@@ -1493,7 +1495,7 @@ export struct TableFormatingContext : FormatingContext {
             }
         }
 
-        return not isSelfContainedRow or rowHeight[i] * 2_au > min(fragmentainerSize.x, fragmentainerSize.y);
+        return not isSelfContainedRow or (rowHeight[i] * 2) > min(fragmentainerSize.x, fragmentainerSize.y);
     }
 
     bool handlePossibleForcedBreakpointAfterRow(Breakpoint& currentBreakpoint, bool allBottomsAndCompletelyLaidOut, bool isLastRow, usize i) {
@@ -1654,8 +1656,8 @@ export struct TableFormatingContext : FormatingContext {
         // otherwise, they only appear once, might be alone in the fragmentainer and can be broken into pages
         bool shouldRepeatHeaderAndFooter =
             tree.fc.allowBreak() and
-            max(headerSize.y, footerSize.y) * 4_au <= tree.fc.size().y and
-            headerSize.y + footerSize.y * 2_au <= tree.fc.size().y;
+            max(headerSize.y, footerSize.y) * 4 <= tree.fc.size().y and
+            headerSize.y + footerSize.y * 2 <= tree.fc.size().y;
 
         Au currPositionX{input.position.x};
         Au currPositionY{input.position.y};

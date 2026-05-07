@@ -1,5 +1,5 @@
-#include <karm-core/macros.h>
-#include <karm-sys/entry.h>
+#include <karm/entry>
+#include <karm/macros>
 
 import Karm.Core;
 import Karm.Http;
@@ -7,8 +7,9 @@ import Karm.Cli;
 import Vaev.Webdriver;
 
 using namespace Karm;
+using namespace Karm::Literals;
 
-Async::Task<> entryPointAsync(Sys::Context& ctx, Async::CancellationToken ct) {
+Async::Task<> entryPointAsync(Sys::Env& env, Async::CancellationToken ct) {
     auto portOption = Cli::option<isize>('p', "port"s, "TCP port to listen to (default: 4444)."s, 4444);
     Cli::Section serverSection = {"Server Options"s, {portOption}};
 
@@ -18,7 +19,7 @@ Async::Task<> entryPointAsync(Sys::Context& ctx, Async::CancellationToken ct) {
         {serverSection}
     };
 
-    co_trya$(cmd.execAsync(ctx));
+    co_trya$(cmd.execAsync(env));
     if (not cmd)
         co_return Ok();
 

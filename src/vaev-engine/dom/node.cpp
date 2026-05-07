@@ -39,10 +39,10 @@ export struct Node : Tree<Node> {
     }
 
     template <typename T>
-    Gc::Ptr<T const> is() const {
+    Gc::Ptr<T> is() const {
         if (nodeType() != T::TYPE)
             return nullptr;
-        return {MOVE, static_cast<T const*>(this)};
+        return {MOVE, static_cast<T*>(this)};
     }
 
     Ref::Url baseURI();
@@ -52,6 +52,10 @@ export struct Node : Tree<Node> {
     virtual void _repr(Io::Emit&) const {}
 
     void repr(Io::Emit& e) const;
+
+    void hash(Meta::Derive<Hasher> auto& h) const {
+        Karm::hash(h, reinterpret_cast<usize>(this));
+    }
 
     bool operator==(Node const& other) const {
         return this == &other;

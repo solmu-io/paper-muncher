@@ -24,10 +24,6 @@ export struct RunningPosition {
 // https://www.w3.org/TR/CSS22/visuren.html#propdef-position
 export using Position = Union<Keywords::Static, Keywords::Relative, Keywords::Absolute, Keywords::Fixed, Keywords::Sticky, RunningPosition>;
 
-export bool impliesRemovingFromFlow(Position position) {
-    return position == Keywords::ABSOLUTE || position == Keywords::FIXED || position.is<RunningPosition>();
-}
-
 export template <>
 struct ValueParser<Position> {
     // https://drafts.csswg.org/css-position-3/#propdef-position
@@ -100,11 +96,11 @@ export using Gap = Union<
     CalcValue<PercentOr<Length>>>;
 
 export struct Gaps {
-    Gap x = Keywords::NORMAL;
-    Gap y = Keywords::NORMAL;
+    Gap row = Keywords::NORMAL;
+    Gap col = Keywords::NORMAL;
 
     void repr(Io::Emit& e) const {
-        e("(gaps {} {})", x, y);
+        e("(gaps {} {})", row, col);
     }
 };
 

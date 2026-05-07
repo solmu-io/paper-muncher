@@ -1,3 +1,7 @@
+module;
+
+#include <karm/macros>
+
 export module Vaev.Engine:layout.runningPosition;
 
 import Karm.Core;
@@ -16,9 +20,9 @@ namespace Vaev::Layout {
 export struct RunningPositionInfo {
     usize page;
     RunningPosition running;
-    Gc::Ref<Dom::Element> element;
+    Dom::OriginatingElement element;
 
-    RunningPositionInfo(usize page, RunningPosition running, Gc::Ref<Dom::Element> element)
+    RunningPositionInfo(usize page, RunningPosition running, Dom::OriginatingElement element)
         : page(page), running(running), element(element) {
     }
 
@@ -35,10 +39,10 @@ struct RunningPositionMap {
 
         if (auto position = style->position.is<RunningPosition>()) {
             auto const origin = box.origin;
-            if (box.origin == nullptr)
+            if (not box.origin)
                 return;
-            RunningPositionInfo info = {pageNumber, *position, origin.upgrade()};
-            content.getOrDefault(position->customIdent)
+            RunningPositionInfo info = {pageNumber, *position, origin.unwrap()};
+            content.lookupOrPutDefault(position->customIdent)
                 .pushBack(std::move(info));
         }
     }
@@ -46,11 +50,7 @@ struct RunningPositionMap {
     // https://www.w3.org/TR/css-gcpm-3/#using-named-strings
     Res<RunningPositionInfo> match(ElementContent elt, usize currentPage = 0) {
         auto id = elt.customIdent;
-        if (not content.has(id)) {
-            return Error::notFound("element not found");
-        }
-
-        auto const& list = content.get(id);
+        auto const& list = try$(content.lookup(id).okOr(Error::notFound("element not found")));
 
         switch (elt.target) {
         case ElementContent::Target::UNDEFINED:

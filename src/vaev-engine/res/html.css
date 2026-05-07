@@ -337,7 +337,7 @@ hr {
 /* https://html.spec.whatwg.org/multipage/obsolete.html#center */
 
 center {
-    text-align: center;
+    text-align: -vaev-block-center;
 }
 
 /* Inject a default stylesheet that prevents images from overflowing the page.*/

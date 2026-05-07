@@ -1,6 +1,6 @@
 module;
 
-#include <karm-core/macros.h>
+#include <karm/macros>
 
 export module Vaev.Engine:dom.window;
 
@@ -72,19 +72,25 @@ export struct Window {
         return _document.upgrade()->url();
     }
 
-    Gc::Ptr<Document> document() {
+    Gc::Ptr<Document> document() const {
         return _document;
     }
 
     Driver::RenderResult& ensureRender() {
         if (_render)
             return *_render;
-        _render = Driver::render(_document.upgrade(), _media, {.small = _media.viewportSize()});
+        _render = Driver::render(_heap, _document.upgrade(), _media, {.small = _media.viewportSize()});
         return *_render;
     }
 
     void computeStyle() {
-        Style::Computer computer{_media, *_document->styleSheets, *_document->fontDatabase};
+        Style::Computer computer{
+            _heap,
+            _media,
+            _document->registeredPropertySet,
+            *_document->styleSheets,
+            *_document->fontDatabase,
+        };
         computer.build();
         computer.styleDocument(*_document);
     }
@@ -97,9 +103,13 @@ export struct Window {
         return ensureRender().scenes;
     }
 
+    RectAu scrollableOverflow() {
+        return ensureRender().frag->scrollableOverflow();
+    }
+
     [[clang::coro_wrapper]]
-    Generator<Print::Page> print(Print::Settings const& settings) const {
-        return Driver::print(_document.upgrade(), settings);
+    Yield<Print::Page> print(Print::Settings const& settings) {
+        return Driver::print(_heap, _document.upgrade(), settings);
     }
 };
 

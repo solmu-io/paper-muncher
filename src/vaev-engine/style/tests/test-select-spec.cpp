@@ -1,9 +1,10 @@
-#include <karm-test/macros.h>
+#include <karm/test>
 
 import Karm.Gc;
 import Vaev.Engine;
 
 using namespace Karm;
+using namespace Karm::Literals;
 
 namespace Vaev::Style::Tests {
 

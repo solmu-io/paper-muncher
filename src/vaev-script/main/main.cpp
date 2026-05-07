@@ -1,13 +1,15 @@
-#include <karm-sys/entry.h>
+#include <karm/entry>
 
 import Vaev.Script;
 import Karm.Core;
 import Karm.Gc;
 
 using namespace Karm;
+using namespace Karm::Literals;
+
 using namespace Vaev;
 
-Async::Task<> entryPointAsync(Sys::Context&, Async::CancellationToken) {
+Async::Task<> entryPointAsync(Sys::Env&, Async::CancellationToken) {
     Gc::Heap heap;
 
     auto agent = heap.alloc<Script::Agent>(heap);

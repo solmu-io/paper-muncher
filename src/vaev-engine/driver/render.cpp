@@ -20,13 +20,20 @@ export struct RenderResult {
     Rc<Layout::Frag> frag;
 };
 
-export RenderResult render(Gc::Ref<Dom::Document> dom, Style::Media const& media, Layout::Viewport viewport) {
-    Style::Computer computer{media, *dom->styleSheets, *dom->fontDatabase};
+export RenderResult render(Gc::Heap& heap, Gc::Ref<Dom::Document> dom, Style::Media const& media, Layout::Viewport viewport) {
+    Style::Computer computer{
+        heap,
+        media,
+        dom->registeredPropertySet,
+        *dom->styleSheets,
+        *dom->fontDatabase,
+    };
+
     computer.build();
     computer.styleDocument(*dom);
 
     Layout::Tree tree = {
-        Layout::build(dom),
+        Layout::buildDocument(dom),
         viewport
     };
 

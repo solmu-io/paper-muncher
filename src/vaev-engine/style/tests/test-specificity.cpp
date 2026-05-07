@@ -1,9 +1,10 @@
-#include <karm-test/macros.h>
+#include <karm/test>
 
 import Vaev.Engine;
 import Karm.Font;
 
 using namespace Karm;
+using namespace Karm::Literals;
 
 namespace Vaev::Style::Tests {
 

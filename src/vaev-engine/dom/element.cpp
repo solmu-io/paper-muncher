@@ -11,24 +11,46 @@ import :dom.tokenList;
 using namespace Karm;
 
 namespace Vaev::Style {
-export struct SpecifiedValues;
-
+export struct ComputedValues;
 } // namespace Vaev::Style
 
 namespace Vaev::Dom {
 
+export struct Element;
+export struct PseudoElement;
+
 // https://drafts.csswg.org/css-pseudo/#CSSPseudoElement-interface
-export struct PseudoElement {
+export struct PseudoElement : Tree<PseudoElement> {
     // https://drafts.csswg.org/css-pseudo/#dom-csspseudoelement-type
     static Symbol const BEFORE;
     static Symbol const AFTER;
     static Symbol const MARKER;
-
     Symbol type;
-    Opt<Rc<Style::SpecifiedValues>> _specifiedValues = NONE;
 
-    Rc<Style::SpecifiedValues> specifiedValues() const {
-        return _specifiedValues.unwrap("unstyled pseudo-element");
+    // https://drafts.csswg.org/css-pseudo/#dom-csspseudoelement-parent
+    Gc::Ptr<Element> parent;
+
+    Opt<Rc<Style::ComputedValues>> _computedValues = NONE;
+
+    PseudoElement(Symbol type, Rc<Style::ComputedValues> computedValues)
+        : type(type), _computedValues(computedValues) {}
+
+    Rc<Style::ComputedValues> computedValues() const {
+        return _computedValues.unwrap("unstyled pseudo-element");
+    }
+
+    // https://drafts.csswg.org/css-pseudo/#dom-csspseudoelement-element
+    // https://drafts.csswg.org/selectors-4/#ultimate-originating-element
+    Gc::Ref<Element> element() const {
+        return parent.upgrade();
+    }
+
+    void repr(Io::Emit& e) const {
+        e("(pseudo-element {})", type);
+    }
+
+    bool operator==(PseudoElement const& other) const {
+        return this == &other;
     }
 };
 
@@ -43,10 +65,10 @@ export struct Element : Node {
     QualifiedName qualifiedName;
     // NOSPEC: Should be a NamedNodeMap
     Map<QualifiedName, Rc<Attr>> attributes;
-    Opt<Rc<Style::SpecifiedValues>> _specifiedValues; // FIXME: We should not have this store here
+    Opt<Rc<Style::ComputedValues>> _computedValues;
     TokenList classList;
     Opt<Rc<Scene::Node>> imageContent;
-    Map<Symbol, Rc<PseudoElement>> _pseudoElements;
+    Map<Symbol, Gc::Ref<PseudoElement>> _pseudoElements;
 
     // MARK: Node --------------------------------------------------------------
 
@@ -62,7 +84,7 @@ export struct Element : Node {
         e(" qualifiedName={}", qualifiedName);
         if (this->attributes.len()) {
             e.indentNewline();
-            for (auto const& [name, attr] : this->attributes.iterUnordered()) {
+            for (auto const& [name, attr] : this->attributes.iterItems()) {
                 attr->repr(e);
             }
             e.deindent();
@@ -71,7 +93,7 @@ export struct Element : Node {
 
     // MARK: Name --------------------------------------------------------------
 
-    Symbol namespaceUri() const {
+    Opt<Symbol> namespaceUri() const {
         return qualifiedName.ns;
     }
 
@@ -100,11 +122,11 @@ export struct Element : Node {
     }
 
     bool hasAttribute(QualifiedName name) const {
-        return this->attributes.tryGet(name) != NONE;
+        return this->attributes.contains(name);
     }
 
     bool hasAttributeUnqualified(Str name) const {
-        for (auto const& [qualifiedName, _] : this->attributes.iterUnordered()) {
+        for (auto const& [qualifiedName, _] : this->attributes.iterItems()) {
             if (qualifiedName.name.str() == name) {
                 return true;
             }
@@ -113,14 +135,14 @@ export struct Element : Node {
     }
 
     Opt<Str> getAttribute(QualifiedName name) const {
-        auto attr = this->attributes.tryGet(name);
+        auto attr = this->attributes.lookup(name);
         if (attr == NONE)
             return NONE;
         return (*attr)->value;
     }
 
     Opt<Str> getAttributeUnqualified(Symbol name) const {
-        for (auto const& [qualifiedName, attr] : this->attributes.iterUnordered())
+        for (auto const& [qualifiedName, attr] : this->attributes.iterItems())
             if (qualifiedName.name == name)
                 return attr->value;
         return NONE;
@@ -128,8 +150,8 @@ export struct Element : Node {
 
     // MARK: Style -------------------------------------------------------------
 
-    Rc<Style::SpecifiedValues> specifiedValues() const {
-        return _specifiedValues.unwrap("unstyled element");
+    Rc<Style::ComputedValues> computedValues() const {
+        return _computedValues.unwrap("unstyled element");
     }
 
     // MARK: Content -----------------------------------------------------------
@@ -170,15 +192,30 @@ export struct Element : Node {
     }
 
     bool hasPseudoElement(Symbol type) const {
-        return _pseudoElements.has(type);
+        return _pseudoElements.contains(type);
     }
 
-    void addPseudoElement(Rc<PseudoElement> pseudoElement) {
+    void addPseudoElement(Gc::Ref<PseudoElement> pseudoElement) {
+        pseudoElement->parent = *this;
         _pseudoElements.put(pseudoElement->type, pseudoElement);
     }
 
-    Opt<Rc<PseudoElement>> getPseudoElement(Symbol type) const {
-        return _pseudoElements.tryGet(type);
+    Opt<Gc::Ref<PseudoElement>> getPseudoElement(Symbol type) const {
+        return _pseudoElements.lookup(type);
+    }
+};
+
+export struct OriginatingElement : Union<Gc::Ref<Element>, Gc::Ref<PseudoElement>> {
+    using Union::Union;
+
+    Rc<Style::ComputedValues> computedValues() {
+        return visit([](auto& el) {
+            return el->computedValues();
+        });
+    }
+
+    void repr(Io::Emit& e) const {
+        e("{}", static_cast<Union const&>(*this));
     }
 };
 

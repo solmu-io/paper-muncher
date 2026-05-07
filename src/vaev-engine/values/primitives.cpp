@@ -1,11 +1,12 @@
 module;
 
-#include <karm-core/macros.h>
+#include <karm/macros>
 
 export module Vaev.Engine:values.primitives;
 
 import Karm.Core;
 import Karm.Ref;
+import Karm.Math;
 
 import :css;
 import :values.base;
@@ -89,8 +90,12 @@ struct CustomIdent {
 
     auto operator<=>(CustomIdent const& other) const = default;
 
+    void hash(Meta::Derive<Hasher> auto& h) const {
+        Karm::hash(h, _symbol);
+    }
+
     void repr(Io::Emit& e) const {
-        e("custom-ident '{}'", _symbol);
+        e("(custom-ident '{}')", _symbol);
     }
 };
 
@@ -141,7 +146,7 @@ export Res<String> parseUrlIntoString(Cursor<Css::Sst>& c) {
 export template <>
 struct ValueParser<Ref::Url> {
     static Res<Ref::Url> parse(Cursor<Css::Sst>& c) {
-        return Ok(Ref::parseUrlOrPath(try$(parseUrlIntoString(c))));
+        return Ok(Ref::Url::parse(try$(parseUrlIntoString(c))));
     }
 };
 

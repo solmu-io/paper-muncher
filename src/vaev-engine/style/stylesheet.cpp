@@ -6,6 +6,9 @@ import Karm.Logger;
 
 import :style.rules;
 
+using namespace Karm::Literals;
+using namespace Karm::Ref::Literals;
+
 namespace Vaev::Style {
 
 // https://www.w3.org/TR/cssom-1/#css-style-sheets
@@ -16,7 +19,7 @@ export struct StyleSheet {
     Vec<Rule> rules;
     Origin origin = Origin::AUTHOR;
 
-    static StyleSheet parse(Css::Sst const& sst, Ref::Url href, Origin origin) {
+    static StyleSheet parse(RegisteredPropertySet& registry, Css::Sst const& sst, Ref::Url href, Origin origin) {
         Namespace ns;
 
         if (sst != Css::Sst::LIST)
@@ -25,7 +28,7 @@ export struct StyleSheet {
         StyleSheet res;
         for (auto const& item : sst.content) {
             if (item == Css::Sst::RULE) {
-                res.rules.pushBack(Rule::parse(item, origin, ns));
+                res.rules.pushBack(Rule::parse(registry, item, origin, ns));
             } else {
                 logWarn("unexpected item in stylesheet: {}", item.type);
             }
@@ -37,10 +40,10 @@ export struct StyleSheet {
         return res;
     }
 
-    static StyleSheet parse(Io::SScan& s, Ref::Url href, Origin origin = Origin::AUTHOR) {
+    static StyleSheet parse(RegisteredPropertySet& registry, Io::SScan& s, Diag::Collector& diags, Ref::Url href, Origin origin = Origin::AUTHOR) {
         Css::Lexer lex{s};
-        Css::Sst sst = consumeRuleList(lex, true);
-        return parse(sst, href, origin);
+        Css::Sst sst = consumeRuleList(lex, true, diags);
+        return parse(registry, sst, href, origin);
     }
 
     void add(Rule&& rule) {

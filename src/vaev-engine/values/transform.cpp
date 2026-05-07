@@ -1,6 +1,6 @@
 module;
 
-#include <karm-core/macros.h>
+#include <karm/macros>
 
 export module Vaev.Engine:values.transform;
 
@@ -14,6 +14,8 @@ import :values.calc;
 import :values.keywords;
 import :values.percent;
 import :values.primitives;
+
+using namespace Karm::Math::Literals;
 
 namespace Vaev {
 

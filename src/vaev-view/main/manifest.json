@@ -1,11 +1,10 @@
 {
     "$schema": "https://schemas.cute.engineering/stable/cutekit.manifest.component.v1",
-    "id": "vaev-browser.main",
-    "props": {
-        "cpp-excluded": true
-    },
+    "id": "vaev-view.main",
     "type": "exe",
     "requires": [
-        "vaev-browser"
+        "vaev-view",
+        "karm-ui",
+        "fonts-all"
     ]
 }

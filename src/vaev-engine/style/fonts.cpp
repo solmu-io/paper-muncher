@@ -1,6 +1,6 @@
 module;
 
-#include <karm-core/macros.h>
+#include <karm/macros>
 
 export module Vaev.Engine:style.fonts;
 
@@ -22,8 +22,8 @@ export struct FontFace {
 
     Union<None, FontStyle, Range<Angle>> style = FontStyle{FontStyle::NORMAL};
 
-    Opt<Range<Gfx::FontWeight>> weight = Gfx::FontWeight::REGULAR;
-    Opt<Range<FontWidth>> width = FontWidth::NORMAL;
+    Opt<Range<Gfx::FontWeight>> weight = Range<Gfx::FontWeight>::emptyAt(Gfx::FontWeight::REGULAR);
+    Opt<Range<FontWidth>> width = Range<FontWidth>::emptyAt(FontWidth::NORMAL);
 
     Vec<Range<Rune>> unicodeRange;
 
@@ -78,7 +78,7 @@ export struct FontFace {
 
 // MARK: font-family
 // https://www.w3.org/TR/css-fonts-4/#font-family-desc
-export struct FontFamilyDesc {
+export struct FontFamilyFontDescriptor {
     Symbol value = initial();
 
     static Str name() { return "font-family"; }
@@ -104,7 +104,7 @@ export struct FontFamilyDesc {
 
 // MARK: src
 // https://www.w3.org/TR/css-fonts-4/#src-desc
-export struct SrcDesc {
+export struct SrcFontDescriptor {
     Vec<FontSource> value;
 
     static Str name() { return "src"; }
@@ -184,7 +184,7 @@ export struct SrcDesc {
 
 // MARK: font-style
 // https://www.w3.org/TR/css-fonts-4/#font-style-desc
-export struct FontStyleDesc {
+export struct FontStyleFontDescriptor {
     Union<None, FontStyle, Range<Angle>> value;
 
     static Str name() { return "font-style"; }
@@ -220,7 +220,7 @@ export struct FontStyleDesc {
 
 // MARK: font-weight
 // https://www.w3.org/TR/css-fonts-4/#font-weight-desc
-export struct FontWeightDesc {
+export struct FontWeightFontDescriptor {
     Opt<Range<Gfx::FontWeight>> value;
 
     static Str name() { return "font-weight"; }
@@ -237,22 +237,17 @@ export struct FontWeightDesc {
             return Ok();
         }
 
-        auto weight = try$(parseValue<FontWeight>(c));
-        if (weight.isRelative())
-            return Error::invalidData("font weight desciptors should use absolute font weight values");
+        auto weight = try$(parseValue<Gfx::FontWeight>(c));
 
-        auto val = parseValue<FontWeight>(c);
+        auto val = parseValue<Gfx::FontWeight>(c);
         if (not val) {
-            value = weight.unwrap<Gfx::FontWeight>();
+            value = Range<Gfx::FontWeight>::emptyAt(weight);
             return Ok();
         }
 
-        if (val.unwrap().isRelative())
-            return Error::invalidData("font weight desciptors should use absolute font weight values");
-
         value = Range<Gfx::FontWeight>::fromStartEnd(
-            weight.unwrap<Gfx::FontWeight>(),
-            val.unwrap().unwrap<Gfx::FontWeight>()
+            weight,
+            val.unwrap()
         );
 
         return Ok();
@@ -261,7 +256,7 @@ export struct FontWeightDesc {
 
 // MARK: font-width
 // https://www.w3.org/TR/css-fonts-4/#font-width-prop
-export struct FontWidthDesc {
+export struct FontWidthFontDescriptor {
     Opt<Range<FontWidth>> value = initial();
 
     static Str name() { return "font-width"; }
@@ -282,7 +277,7 @@ export struct FontWidthDesc {
 
         auto val = parseValue<FontWidth>(c);
         if (not val) {
-            value = width;
+            value = Range<FontWidth>::emptyAt(width);
             return Ok();
         }
 
@@ -294,7 +289,7 @@ export struct FontWidthDesc {
 
 // MARK: unicode-range
 // https://www.w3.org/TR/css-fonts-4/#unicode-range-desc
-export struct UnicodeRangeDesc {
+export struct UnicodeRangeFontDescriptor {
     Vec<Range<Rune>> value;
 
     static Str name() { return "unicode-range"; }
@@ -310,7 +305,7 @@ export struct UnicodeRangeDesc {
 
 // MARK: font-feature-settings
 // https://www.w3.org/TR/css-fonts-4/#font-rend-desc
-export struct FontFeatureSettingsDesc {
+export struct FontFeatureSettingsFontDescriptor {
     Vec<FontFeature> value;
 
     static Str name() { return "font-feature-settings"; }
@@ -324,7 +319,7 @@ export struct FontFeatureSettingsDesc {
 
 // MARK: font-variation-settingsl
 // https://www.w3.org/TR/css-fonts-4/#font-rend-desc
-export struct FontVariationSettingsDesc {
+export struct FontVariationSettingsFontDescriptor {
     Vec<FontVariation> value;
 
     static Str name() { return "font-variation-settings"; }
@@ -338,7 +333,7 @@ export struct FontVariationSettingsDesc {
 
 // MARK: font-named-instance
 // https://www.w3.org/TR/css-fonts-4/#font-named-instance
-export struct FontNamedInstanceDesc {
+export struct FontNamedInstanceFontDescriptor {
     Opt<String> value = initial();
 
     static Str name() { return "font-named-instance"; }
@@ -362,7 +357,7 @@ export struct FontNamedInstanceDesc {
 
 // MARK: font-display
 // https://www.w3.org/TR/css-fonts-4/#font-display-desc
-export struct FontDisplayDesc {
+export struct FontDisplayFontDescriptor {
     FontDisplay value = initial();
 
     static Str name() { return "font-display"; }
@@ -394,7 +389,7 @@ export struct FontDisplayDesc {
 
 // MARK: ascent-override
 // https://www.w3.org/TR/css-fonts-4/#font-metrics-override-desc
-export struct AscentOverrideDesc {
+export struct AscentOverrideFontDescriptor {
     Opt<Percent> value = initial();
 
     static Str name() { return "ascent-override"; }
@@ -444,7 +439,7 @@ export struct DescentOverrideStyleProp {
 
 // MARK: line-gap-override
 // https://www.w3.org/TR/css-fonts-4/#font-metrics-override-desc
-export struct LineGapOverrideDesc {
+export struct LineGapOverrideFontDescriptor {
     Opt<Percent> value = initial();
 
     static Str name() { return "line-gap-override"; }
@@ -468,7 +463,7 @@ export struct LineGapOverrideDesc {
 
 // MARK: size-adjust
 // https://www.w3.org/TR/css-fonts-5/#size-adjust-desc
-export struct SizeAdjustDesc {
+export struct SizeAdjustFontDescriptor {
     Percent value = initial();
 
     static Str name() { return "size-adjust"; }
@@ -485,31 +480,31 @@ export struct SizeAdjustDesc {
     }
 };
 
-using _FontDesc = Union<
-    FontFamilyDesc,
-    SrcDesc,
-    FontStyleDesc,
-    FontWeightDesc,
-    FontWidthDesc,
+using _FontDescriptor = Union<
+    FontFamilyFontDescriptor,
+    SrcFontDescriptor,
+    FontStyleFontDescriptor,
+    FontWeightFontDescriptor,
+    FontWidthFontDescriptor,
 
-    UnicodeRangeDesc,
+    UnicodeRangeFontDescriptor,
 
-    FontFeatureSettingsDesc,
-    FontVariationSettingsDesc,
-    FontNamedInstanceDesc,
+    FontFeatureSettingsFontDescriptor,
+    FontVariationSettingsFontDescriptor,
+    FontNamedInstanceFontDescriptor,
 
-    FontDisplayDesc,
+    FontDisplayFontDescriptor,
 
-    AscentOverrideDesc,
+    AscentOverrideFontDescriptor,
     DescentOverrideStyleProp,
-    LineGapOverrideDesc,
-    SizeAdjustDesc
+    LineGapOverrideFontDescriptor,
+    SizeAdjustFontDescriptor
 
     /**/
     >;
 
-export struct FontDesc : _FontDesc {
-    using _FontDesc::_FontDesc;
+export struct FontDescriptor : _FontDescriptor {
+    using _FontDescriptor::_FontDescriptor;
 
     static constexpr Array LEGACY_ALIAS = {
         Pair<Str>("font-stretch", "font-width"),

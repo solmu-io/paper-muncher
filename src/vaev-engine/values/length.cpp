@@ -1,6 +1,6 @@
 module;
 
-#include <karm-core/macros.h>
+#include <karm/macros>
 
 export module Vaev.Engine:values.length;
 
@@ -14,6 +14,12 @@ import :values.resolved;
 using namespace Karm;
 
 namespace Vaev {
+
+export using Math::Au;
+export using Math::InsetsAu;
+export using Math::RectAu;
+export using Math::Vec2Au;
+export using Math::RadiiAu;
 
 // 6. MARK: Distance Units: the <length> type
 // https://drafts.csswg.org/css-values/#lengths

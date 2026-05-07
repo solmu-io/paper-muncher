@@ -1,6 +1,6 @@
 module;
 
-#include <karm-core/macros.h>
+#include <karm/macros>
 
 export module Vaev.Engine:loader.loader;
 
@@ -23,63 +23,60 @@ namespace Vaev::Loader {
 
 Async::Task<Gc::Ref<Dom::Document>> _loadDocumentAsync(Gc::Heap& heap, Ref::Url url, Rc<Http::Response> resp, Async::CancellationToken ct) {
     auto dom = heap.alloc<Dom::Document>(url);
+    auto contentType = resp->header.contentType().unwrapOr(Ref::Uti::PUBLIC_DATA);
 
-    auto mime = resp->header.contentType();
-
-    if (not mime.has())
-        mime = Ref::sniffSuffix(url.path.suffix());
+    if (contentType == Ref::Uti::PUBLIC_DATA)
+        contentType = Ref::Uti::fromSuffix(url.path.suffix());
 
     if (not resp->body)
         co_return Error::invalidInput("response body is missing");
 
     auto respBody = resp->body.unwrap();
     auto buf = co_trya$(Aio::readAllUtf8Async(*respBody, ct));
+    Diag::Collector diags;
 
-    if (not mime.has() or mime->is("application/octet-stream"_mime)) {
-        mime = Ref::sniffBytes(bytes(buf));
-        logWarn("{} has unspecified mime type, mime sniffing yielded '{}'", url, mime);
+    if (contentType == Ref::Uti::PUBLIC_DATA) {
+        contentType = Ref::sniffBytes(bytes(buf));
+        logWarn("{} has unspecified content type, sniffing yielded '{}'", url, contentType);
     }
 
-    if (mime->is("text/html"_mime)) {
+    if (contentType.conformsTo(Ref::Uti::PUBLIC_HTML)) {
         Html::HtmlParser parser{heap, dom};
-        parser.write(buf);
-
-        co_return Ok(dom);
-    } else if (mime->is("application/xhtml+xml"_mime)) {
+        parser.write(buf, diags);
+    } else if (contentType.conformsTo(Ref::Uti::PUBLIC_XML)) {
         Io::SScan scan{buf};
         Xml::XmlParser parser{heap};
-        co_try$(parser.parse(scan, Html::NAMESPACE, *dom));
-
-        co_return Ok(dom);
-    } else if (mime->is("image/svg+xml"_mime)) {
-        Io::SScan scan{buf};
-        Xml::XmlParser parser{heap};
-        co_try$(parser.parse(scan, Svg::NAMESPACE, *dom));
-
-        co_return Ok(dom);
-    } else if (mime->is("text/markdown"_mime)) {
+        co_try$(parser.parse(scan, NONE, *dom));
+    } else if (contentType.conformsTo(Ref::Uti::PUBLIC_MARKDOWN)) {
         auto doc = Md::parse(buf);
-        logDebug("markdown: {}", doc);
         auto html = Md::renderHtml(doc);
-
         Html::HtmlParser parser{heap, dom};
-        parser.write(html);
-
-        co_return Ok(dom);
-    } else if (mime->is("text/plain"_mime)) {
+        // TODO: Find  a clean way to report inline html error in markdown
+        Diag::Collector htmlDiags = Diag::Collector::ignore();
+        parser.write(html, htmlDiags);
+    } else if (contentType.conformsTo(Ref::Uti::PUBLIC_TEXT)) {
         auto text = heap.alloc<Dom::Text>();
         text->appendData(buf);
-
         auto body = heap.alloc<Dom::Element>(Html::BODY_TAG);
         body->appendChild(text);
-
         dom->appendChild(body);
-        co_return Ok(dom);
+    } else if (contentType.conformsTo(Ref::Uti::PUBLIC_IMAGE)) {
+        auto element = heap.alloc<Dom::Element>(Html::IMG_TAG);
+        element->setAttribute(Html::SRC_ATTR, url.str());
+        auto body = heap.alloc<Dom::Element>(Html::BODY_TAG);
+        body->appendChild(element);
+        dom->appendChild(body);
     } else {
-        logError("unsupported MIME type: {}", mime);
-
-        co_return Error::invalidInput("unsupported MIME type");
+        logError("unsupported content type: {}", contentType);
+        co_return Error::invalidInput("unsupported content type");
     }
+
+    if (diags.any()) {
+        Diag::SimpleRenderer render{url};
+        render.render(Sys::err(), diags);
+    }
+
+    co_return Ok(dom);
 }
 
 export Async::Task<Gc::Ref<Dom::Document>> viewSourceAsync(Gc::Heap& heap, Http::Client& client, Ref::Url const& url, Async::CancellationToken ct) {
@@ -100,7 +97,7 @@ export Async::Task<Gc::Ref<Dom::Document>> viewSourceAsync(Gc::Heap& heap, Http:
     co_return Ok(dom);
 }
 
-Async::Task<Style::StyleSheet> _fetchStylesheetAsync(Http::Client& client, Ref::Url url, Style::Origin origin, Async::CancellationToken ct) {
+Async::Task<Style::StyleSheet> _fetchStylesheetAsync(Style::RegisteredPropertySet& registry, Http::Client& client, Ref::Url url, Style::Origin origin, Async::CancellationToken ct) {
     auto resp = co_trya$(client.getAsync(url, ct));
     if (not resp->body)
         co_return Error::notFound("could not load stylesheet");
@@ -109,7 +106,15 @@ Async::Task<Style::StyleSheet> _fetchStylesheetAsync(Http::Client& client, Ref::
     auto buf = co_trya$(Aio::readAllUtf8Async(*respBody, ct));
 
     Io::SScan s{buf};
-    co_return Ok(Style::StyleSheet::parse(s, url, origin));
+    Diag::Collector diags;
+    auto stylesheet = Style::StyleSheet::parse(registry, s, diags, url, origin);
+
+    if (diags.any()) {
+        Diag::SimpleRenderer render{url};
+        render.render(Sys::err(), diags);
+    }
+
+    co_return Ok(stylesheet);
 }
 
 Async::Task<Rc<Scene::Node>> _fetchImageContentAsync(Http::Client& client, Ref::Url url, Async::CancellationToken ct);
@@ -119,7 +124,7 @@ Rc<Scene::Node> _missingImagePlaceholder() {
     return makeRc<Scene::Image>(placeholder->bound().cast<f64>(), placeholder);
 }
 
-Async::Task<> _fetchResourcesAsync(Http::Client& client, Gc::Ref<Dom::Node> node, Style::StyleSheetList& sb, Async::CancellationToken ct) {
+Async::Task<> _fetchResourcesAsync(Style::RegisteredPropertySet& registry, Http::Client& client, Gc::Ref<Dom::Node> node, Style::StyleSheetList& sb, Async::CancellationToken ct) {
     auto el = node->is<Dom::Element>();
     if (el and el->qualifiedName == Html::IMG_TAG) {
         auto src = el->getAttribute(Html::SRC_ATTR);
@@ -141,7 +146,12 @@ Async::Task<> _fetchResourcesAsync(Http::Client& client, Gc::Ref<Dom::Node> node
     } else if (el and el->qualifiedName == Html::STYLE_TAG) {
         auto text = el->textContent();
         Io::SScan textScan{text};
-        auto sheet = Style::StyleSheet::parse(textScan, node->baseURI());
+        Diag::Collector diags;
+        auto sheet = Style::StyleSheet::parse(registry, textScan, diags, node->baseURI());
+        if (diags.any()) {
+            Diag::SimpleRenderer render{Io::format("{}:<style>", node->baseURI())};
+            render.render(Sys::err(), diags);
+        }
         sb.add(std::move(sheet));
     } else if (el and el->qualifiedName == Html::LINK_TAG) {
         auto rel = el->getAttribute(Html::REL_ATTR);
@@ -153,7 +163,7 @@ Async::Task<> _fetchResourcesAsync(Http::Client& client, Gc::Ref<Dom::Node> node
             }
 
             auto url = Ref::Url::parse(*href, node->baseURI());
-            auto sheet = co_await _fetchStylesheetAsync(client, url, Style::Origin::AUTHOR, ct);
+            auto sheet = co_await _fetchStylesheetAsync(registry, client, url, Style::Origin::AUTHOR, ct);
 
             if (not sheet) {
                 logWarn("failed to fetch stylesheet from {}: {}", url, sheet);
@@ -164,7 +174,7 @@ Async::Task<> _fetchResourcesAsync(Http::Client& client, Gc::Ref<Dom::Node> node
         }
     } else {
         for (auto child = node->firstChild(); child; child = child->nextSibling())
-            (void)co_await _fetchResourcesAsync(client, *child, sb, ct);
+            (void)co_await _fetchResourcesAsync(registry, client, *child, sb, ct);
     }
 
     co_return Ok();
@@ -191,16 +201,16 @@ export Async::Task<Gc::Ref<Dom::Document>> fetchDocumentAsync(Gc::Heap& heap, Ht
     auto dom = co_trya$(_loadDocumentAsync(heap, url, resp, ct));
     auto stylesheets = heap.alloc<Style::StyleSheetList>();
 
-    stylesheets->add((co_await _fetchStylesheetAsync(client, "bundle://vaev-engine/html.css"_url, Style::Origin::USER_AGENT, ct))
+    stylesheets->add((co_await _fetchStylesheetAsync(dom->registeredPropertySet, client, "bundle://vaev-engine/html.css"_url, Style::Origin::USER_AGENT, ct))
                          .take("user agent stylesheet not available"));
 
-    stylesheets->add((co_await _fetchStylesheetAsync(client, "bundle://vaev-engine/print.css"_url, Style::Origin::USER_AGENT, ct))
+    stylesheets->add((co_await _fetchStylesheetAsync(dom->registeredPropertySet, client, "bundle://vaev-engine/print.css"_url, Style::Origin::USER_AGENT, ct))
                          .take("user agent stylesheet not available"));
 
-    stylesheets->add((co_await _fetchStylesheetAsync(client, "bundle://vaev-engine/svg.css"_url, Style::Origin::USER_AGENT, ct))
+    stylesheets->add((co_await _fetchStylesheetAsync(dom->registeredPropertySet, client, "bundle://vaev-engine/svg.css"_url, Style::Origin::USER_AGENT, ct))
                          .take("user agent stylesheet not available"));
 
-    (void)co_await _fetchResourcesAsync(client, *dom, *stylesheets, ct);
+    (void)co_await _fetchResourcesAsync(dom->registeredPropertySet, client, *dom, *stylesheets, ct);
     dom->styleSheets = stylesheets;
     dom->fontDatabase = co_await _loadFontfacesAsync(client, *stylesheets, ct);
 

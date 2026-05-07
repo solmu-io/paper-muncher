@@ -4,6 +4,8 @@ import Karm.Core;
 import Karm.Math;
 import Karm.Logger;
 
+import :values.length;
+
 using namespace Karm;
 
 namespace Vaev::Layout {

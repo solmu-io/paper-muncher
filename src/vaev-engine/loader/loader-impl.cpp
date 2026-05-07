@@ -1,6 +1,6 @@
 module;
 
-#include <karm-core/macros.h>
+#include <karm/macros>
 
 module Vaev.Engine;
 
@@ -27,8 +27,7 @@ Async::Task<Rc<Scene::Node>> _fetchImageContentAsync(Http::Client& client, Ref::
 
     auto body = resp->body.unwrap();
     auto data = co_trya$(Aio::readAllAsync(*body, ct));
-
-    if (resp->header.contentType().unwrapOr(Ref::sniffBytes(data)) == "image/svg+xml"_mime) {
+    if (resp->header.contentType().unwrapOr(Ref::sniffBytes(data)).conformsTo(Ref::Uti::PUBLIC_SVG)) {
         auto subClient = makeRc<Http::Client>(client._transport);
         subClient->userAgent = client.userAgent;
         auto window = Dom::Window::create(subClient);
@@ -42,8 +41,8 @@ Async::Task<Rc<Scene::Node>> _fetchImageContentAsync(Http::Client& client, Ref::
         // NOSPEC: The spec references a "default object size" but does not define explicit values.
         //         Historically, browsers (including Chrome) default to 300x150, as mentioned in older drafts:
         //         https://www.w3.org/TR/2011/WD-css3-images-20110908/#default-object-size
-        auto width = resolver.resolve(root->specifiedValues()->sizing->width.unwrapOr<CalcValue<PercentOr<Length>>>(Length{300_au}), 300_au);
-        auto height = resolver.resolve(root->specifiedValues()->sizing->height.unwrapOr<CalcValue<PercentOr<Length>>>(Length{300_au}), 300_au);
+        auto width = resolver.resolve(root->computedValues()->sizing->width.unwrapOr<CalcValue<PercentOr<Length>>>(Length{300_au}), 300_au);
+        auto height = resolver.resolve(root->computedValues()->sizing->height.unwrapOr<CalcValue<PercentOr<Length>>>(Length{300_au}), 300_au);
 
         window->changeMedia(Style::Media::forRender({width, height}, Resolution::fromDppx(1)));
         co_return Ok(window->render());
@@ -59,7 +58,7 @@ void _evalFontfaceRules(Style::Rule const& rule, Vec<Style::FontFace>& fontFaces
     rule.visit(Visitor{
         [&](Style::FontFaceRule const& r) {
             auto& fontFace = fontFaces.emplaceBack();
-            for (auto const& decl : r.descs)
+            for (auto const& decl : r.descriptors)
                 decl.apply(fontFace);
         },
         [&](auto const&) {
