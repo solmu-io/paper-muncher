@@ -16,4 +16,4 @@ examples/
 tmp/
 dist/
 *.so
-project.lock
+project.lockproject-lock.json
