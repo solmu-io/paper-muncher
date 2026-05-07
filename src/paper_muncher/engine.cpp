@@ -1,6 +1,6 @@
 // src/paper_muncher/engine.cpp
 
-#include <karm-core/macros.h>
+#include <karm/macros>
 #include <stdexcept>
 #include <string>
 #include <vector>
