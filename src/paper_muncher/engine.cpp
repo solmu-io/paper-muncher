@@ -18,8 +18,7 @@ import Karm.Image;
 
 using namespace Karm;
 using namespace Karm::Literals;
-using namespace Karm::Math::Literals;
-using namespace Karm::Fmt::Literals;
+using namespace Karm::Ref::Literals;
 
 // This code originates from Paper Muncher:
 // https://github.com/odoo/paper-muncher
@@ -126,7 +125,7 @@ static Async::Task<Buf<u8>> _htmlToPdfAsync(
 
     // 4. Input: HTML string as a data: URL
     auto htmlStr = String(html.c_str());
-    auto dataUrl = Ref::Url::data("text/html"_mime, bytes(htmlStr));
+    auto dataUrl = Ref::Url::data(Mime{"text/html"}, bytes(htmlStr));
 
     // 5. Create the PDF printer
     auto printer = co_try$(
@@ -156,7 +155,6 @@ std::vector<unsigned char> html_to_pdf(
     std::string const& html,
     Options const& opts
 ) {
-    Sys::Context ctx;
     Async::Cancellation cancellation;
 
     Buf<u8> captured;
