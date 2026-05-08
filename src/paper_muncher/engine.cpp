@@ -1,5 +1,3 @@
-// src/paper_muncher/engine.cpp
-
 #include <karm/macros>
 #include <stdexcept>
 #include <string>
@@ -19,6 +17,9 @@ import Karm.Gfx;
 import Karm.Image;
 
 using namespace Karm;
+using namespace Karm::Literals;
+using namespace Karm::Math::Literals;
+using namespace Karm::Fmt::Literals;
 
 // This code originates from Paper Muncher:
 // https://github.com/odoo/paper-muncher
@@ -75,7 +76,7 @@ static Async::Task<Buf<u8>> _htmlToPdfAsync(
     Opt<Vaev::Length> height = NONE;
 
     if (!opts.paper.empty())
-        paper = co_try$(Print::findPaperStock(Str(opts.paper.c_str())));
+        paper = co_try$(Print::lookupStockByName(Str(opts.paper.c_str())));
 
     if (!opts.orientation.empty())
         orientation = co_try$(
@@ -102,23 +103,20 @@ static Async::Task<Buf<u8>> _htmlToPdfAsync(
         height = co_try$(Vaev::parseValue<Vaev::Length>(Str(h.c_str())));
     }
 
-    // 2. Prepare print settings (replicating Option::preparePrintSettings)
+    // 2. Derive print settings (mirrors Option::derivePrintSettings in mod.cpp)
     Vaev::Layout::Resolver resolver;
-    resolver.viewport.dpi = scale;
+    resolver.viewport.dpi = density;
 
-    if (orientation == Print::Orientation::LANDSCAPE)
-        paper = paper.landscape();
-
-    if (width or height) {
-        paper.name = "custom";
-        if (width)
-            paper.width = resolver.resolve(*width).cast<f64>();
-        if (height)
-            paper.height = resolver.resolve(*height).cast<f64>();
-    }
+    auto stock = paper;
+    if (width or height)
+        stock = Print::PaperStock::custom(
+            width  ? resolver.resolve(*width)  : stock.minorAxis,
+            height ? resolver.resolve(*height) : stock.majorAxis
+        );
 
     Print::Settings settings{
-        .paper = paper,
+        .stock = stock,
+        .orientation = orientation,
         .margins = margins,
         .scale = scale.toDppx(),
     };
@@ -143,7 +141,7 @@ static Async::Task<Buf<u8>> _htmlToPdfAsync(
     co_trya$(window->loadLocationAsync(dataUrl, Ref::Uti::PUBLIC_OPEN, ct));
 
     // 7. Paginate and print
-    window->print(settings) | forEach([&](Print::Page& page) {
+    window->print(settings) | ForEach([&](Print::Page& page) {
         page.print(*printer, {.showBackgroundGraphics = true});
     });
 
