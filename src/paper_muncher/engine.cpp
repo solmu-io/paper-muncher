@@ -125,7 +125,7 @@ static Async::Task<Buf<u8>> _htmlToPdfAsync(
 
     // 4. Input: HTML string as a data: URL
     auto htmlStr = String(html.c_str());
-    auto dataUrl = Ref::Url::data(Mime{"text/html"}, bytes(htmlStr));
+    auto dataUrl = Ref::Url::data("text/html"_mime, bytes(htmlStr));
 
     // 5. Create the PDF printer
     auto printer = co_try$(
