@@ -11,7 +11,7 @@ import Karm.Math;
 
 import :values;
 import :css;
-import :style.specified;
+import :style.computed;
 
 using namespace Karm;
 
