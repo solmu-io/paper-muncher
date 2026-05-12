@@ -303,7 +303,7 @@ export struct BackgroundAttachmentProp {
     static constexpr Str name() { return "background-attachment"; }
 
     static constexpr Array<BackgroundAttachment, 1> initial() {
-        return {BackgroundAttachment::Keywords::SCROLL};
+        return {Keywords::SCROLL};
     }
 
     void apply(ComputedValues& c) const {
@@ -3383,22 +3383,22 @@ export struct SVGViewBoxProp {
 
 // https://svgwg.org/svg2-draft/painting.html#SpecifyingStrokePaint
 export struct SVGStrokeProp {
-    Paint value = initial();
+    SvgPaint value = initial();
 
     static constexpr Str name() { return "stroke"; }
 
-    static Paint initial() { return NONE; }
+    static SvgPaint initial() { return NONE; }
 
     void apply(ComputedValues& c) const {
         c.svg.cow().stroke = value;
     }
 
-    static Paint load(ComputedValues const& c) {
+    static SvgPaint load(ComputedValues const& c) {
         return c.svg->stroke;
     }
 
     Res<> parse(Cursor<Css::Sst>& c) {
-        value = try$(parseValue<Paint>(c));
+        value = try$(parseValue<SvgPaint>(c));
         return Ok();
     }
 };
