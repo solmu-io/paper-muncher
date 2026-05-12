@@ -4,6 +4,7 @@
     "description": "Paper Muncher shared library with C API",
     "type": "lib",
     "props": {
+        "cpp-excluded": false,
         "cpp-flags": ["-fPIC"]
     },
     "requires": [
