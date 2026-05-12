@@ -9,11 +9,16 @@
     },
     "requires": [
         "karm-logger",
+        "karm-logger.posix",
         "karm-sys",
+        "karm-sys.posix",
+        "karm-core.posix",
         "karm-image",
         "vaev-engine",
         "fonts-all",
-        "karm-http"
+        "karm-http",
+        "karm-gfx",
+        "karm-ref"
     ],
     "provides": [
         "pm-lib"
