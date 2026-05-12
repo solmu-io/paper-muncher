@@ -167,11 +167,11 @@ export struct RowGapProp {
     static constexpr Keywords::Normal initial() { return Keywords::NORMAL; }
 
     void apply(ComputedValues& c) const {
-        c.gaps.cow().y = value;
+        c.gaps.cow().row = value;
     }
 
     static Gap load(ComputedValues const& c) {
-        return c.gaps->y;
+        return c.gaps->row;
     }
 
     Res<> parse(Cursor<Css::Sst>& c) {
@@ -189,11 +189,11 @@ export struct ColumnGapProp {
     static constexpr Keywords::Normal initial() { return Keywords::NORMAL; }
 
     void apply(ComputedValues& c) const {
-        c.gaps.cow().x = value;
+        c.gaps.cow().col = value;
     }
 
     static Gap load(ComputedValues const& c) {
-        return c.gaps->x;
+        return c.gaps->col;
     }
 
     Res<> parse(Cursor<Css::Sst>& c) {
@@ -303,7 +303,7 @@ export struct BackgroundAttachmentProp {
     static constexpr Str name() { return "background-attachment"; }
 
     static constexpr Array<BackgroundAttachment, 1> initial() {
-        return {BackgroundAttachment::SCROLL};
+        return {BackgroundAttachment::Keywords::SCROLL};
     }
 
     void apply(ComputedValues& c) const {
@@ -3295,22 +3295,22 @@ export struct SVGRProp {
 
 // https://svgwg.org/svg2-draft/painting.html#FillProperty
 export struct SVGFillProp {
-    Paint value = initial();
+    SvgPaint value = initial();
 
     static constexpr Str name() { return "fill"; }
 
-    static constexpr Paint initial() { return Color{Gfx::BLACK}; }
+    static constexpr SvgPaint initial() { return Color{Gfx::BLACK}; }
 
     void apply(ComputedValues& c) const {
         c.svg.cow().fill = value;
     }
 
-    static Paint load(ComputedValues const& c) {
+    static SvgPaint load(ComputedValues const& c) {
         return c.svg->fill;
     }
 
     Res<> parse(Cursor<Css::Sst>& c) {
-        value = try$(parseValue<Paint>(c));
+        value = try$(parseValue<SvgPaint>(c));
         return Ok();
     }
 };
@@ -3347,22 +3347,22 @@ export struct SVGDProp {
 
 // https://svgwg.org/svg2-draft/coords.html#ViewBoxAttribute
 export struct SVGViewBoxProp {
-    Opt<ViewBox> value = initial();
+    Opt<SvgViewBox> value = initial();
 
     static constexpr Str name() { return "viewBox"; }
 
-    static Opt<ViewBox> initial() { return NONE; }
+    static Opt<SvgViewBox> initial() { return NONE; }
 
     void apply(ComputedValues& c) const {
         c.svg.cow().viewBox = value;
     }
 
-    static Opt<ViewBox> load(ComputedValues const& c) {
+    static Opt<SvgViewBox> load(ComputedValues const& c) {
         return c.svg->viewBox;
     }
 
     Res<> parse(Cursor<Css::Sst>& c) {
-        ViewBox viewBox;
+        SvgViewBox viewBox;
 
         viewBox.minX = try$(parseValue<Number>(c));
 
