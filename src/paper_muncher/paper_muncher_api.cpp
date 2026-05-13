@@ -31,7 +31,43 @@ using namespace Karm::Ref::Literals;
 static thread_local std::string last_error;
 static void set_error(const std::string& err) { last_error = err; }
 
-// (parse_options_json unchanged — keep your existing version)
+static SolPDF::Options parse_options_json(const char* json) {
+    SolPDF::Options opts;
+    if (!json) return opts;
+
+    std::string s(json);
+
+    auto extract = [&](const std::string& key) -> std::string {
+        auto pos = s.find("\"" + key + "\"");
+        if (pos == std::string::npos) return "";
+        pos = s.find(':', pos);
+        if (pos == std::string::npos) return "";
+        auto start = s.find('"', pos + 1);
+        if (start == std::string::npos) return "";
+        auto end = s.find('"', start + 1);
+        if (end == std::string::npos) return "";
+        return s.substr(start + 1, end - start - 1);
+    };
+
+    auto extractNum = [&](const std::string& key, double def) -> double {
+        auto pos = s.find("\"" + key + "\"");
+        if (pos == std::string::npos) return def;
+        pos = s.find(':', pos);
+        if (pos == std::string::npos) return def;
+        return std::stod(s.substr(pos + 1));
+    };
+
+    auto v = extract("paper");         if (!v.empty()) opts.paper = v;
+    v = extract("orientation");        if (!v.empty()) opts.orientation = v;
+    v = extract("output_format");      if (!v.empty()) opts.output_format = v;
+    v = extract("background");         if (!v.empty()) opts.background = v;
+    opts.width   = extractNum("width", 0);
+    opts.height  = extractNum("height", 0);
+    opts.scale   = extractNum("scale", 1.0);
+    opts.density = extractNum("density", 1.0);
+
+    return opts;
+}
 
 namespace {
 
